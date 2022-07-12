@@ -1,4 +1,5 @@
 # For the entire repository.
+# Make sure you are using AT LEAST Python 3.8.
 
 pytest==7.1.2 # For testing
 numpy # For powerful N-d arrays
