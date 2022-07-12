@@ -1,2 +1,2 @@
-# For just this subdirectory.
+# For just the simulations subdirectory.
 # Make sure you are using AT LEAST Python 3.8.
