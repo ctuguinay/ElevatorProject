@@ -1,3 +1,3 @@
 # Elevator Optimization Project
 
-Head to sub-directories for further content.
+Head to the sub-directories `/data`, `/simulations`, and `/visualizations` for further content.
