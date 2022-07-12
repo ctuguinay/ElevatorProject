@@ -14,5 +14,5 @@ cd visualizations
 
 * Run the view data distribution code in python.
 ```
-python view_data_dist.py
+python view_data_dist.py --set_width 15 --set_height 15
 ```
