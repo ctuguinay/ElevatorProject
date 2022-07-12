@@ -19,8 +19,8 @@ pip install numpy
 
 * Once you have setup the environment, run the code to create the CSV containing our data:
 ```
-python create_csv.py --set_floors 8 --set_persons 10000
+python create_csv.py --set_persons 10000 --set_floors 8
 ```
-* You can use the `set_floors` and `set_persons` to simulate how many floors and people we want to generate within our data.
+* You can use the `set_persons` and `set_floors` to simulate how many people and floors we want to generate within our data.
 
 * If you are starting at the `./data` directory, you should find the CSV in `./CSVs/data.csv`.
