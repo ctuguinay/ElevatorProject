@@ -14,48 +14,13 @@ class Person:
         weight: the person's weight in kg
     """
 
-    def __init__(self, floors: int):
+    def __init__(self, floors: int, no_stop_prob: float, max_non_standard_hall_calls: int, 
+        mean_entry: int, mean_lunch: int, mean_exit: int, stdev: int, cutoff: int, mean_lunch_len: int,
+        lunch_stdev: int, lunch_cutoff: int, standard_call_buffer: int):
 
         # Each person will have a hall call to get to the floor they work on,
         # a hall call to get lunch (on the first floor), a hall call to go back
         # to the floor they work on, and random other hall calls throughout the day
-
-        # -----------------------------------------------------------------------
-        # parameters for the data, maybe make some of these into input parameters
-        # if ever need be
-
-        # high probability of having no "non-standard" hall-calls
-        no_stop_prob = 0.7
-        # if nonzero, number of non-standard hall calls is uniformly chosen from 1 to max
-        max_non_standard_hall_calls = 3
-
-        # mean time for entering work (time measured in seconds after midnight)
-        mean_entry = 32400  # 9am
-
-        # mean lunchtime
-        mean_lunch = 46800  # 1pm
-
-        # mean time for exiting work
-        mean_exit = 61200  # 5pm
-
-        # standard deviation for "standard times" above
-        stdev = 1800  # 20 mins
-
-        # tail cutoff (for use described in _tail_cutoff_normal_sample)
-        cutoff = 5400  # 60 mins
-
-        # mean lunch length
-        mean_lunch_len = 1800  # 30 mins
-
-        # standard devation for lunch length
-        lunch_stdev = 300  # 5 mins
-
-        # tail cutoff for lunch length
-        lunch_cutoff = 900  # 15 mins
-
-        # buffer between standard calls and any nonstandard calls
-        standard_call_buffer = 900  # 15 mins
-        # ------------------------------------------------------------------------
 
         arrival_time = self._tail_cutoff_normal_sample(mean_entry, stdev, cutoff)
         lunch_time = self._tail_cutoff_normal_sample(mean_lunch, stdev, cutoff)
