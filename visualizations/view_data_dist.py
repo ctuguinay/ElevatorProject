@@ -28,8 +28,8 @@ if __name__ == "__main__":
     # Get numpy array in seconds.
     seconds_np = data_np[:, 1]
 
+    # Convert seconds to hours.
     time_converter = lambda seconds: seconds / 3600
-
     time_np = np.array([time_converter(seconds.item()) for seconds in seconds_np])
 
     # Create time entered histogram.
