@@ -9,24 +9,45 @@ if __name__ == "__main__":
 
     # Parser to parse this script's arguments that pertain to our generated data.
     parser = argparse.ArgumentParser(description='Argument parser for viewing the distribution of our dataset.')
+
+    parser.add_argument("--set_target_file", type=str,
+                    help="Sets which file in data/CSVs/.... we want to visualize data from.",
+                    default="data.csv")
+
     parser.add_argument("--set_width", type=int,
                         help="Sets with of our Maplotlib Canvas.",
                         default=15)
+
     parser.add_argument("--set_height", type=int,
                         help="Sets height of our Maplotlib Canvas.",
                         default=15)
+
+    # Parse arguments.
     args = parser.parse_args()
+
+    # Set the arguments as variables.
+    target_file = args.set_target_file
     width = args.set_width
     height = args.set_height
-    
-    # Get absolute current path.
-    cur_path = os.path.dirname(__file__)
 
-    # Get absolute path to the data.csv file.
-    data_path = os.path.relpath('..\\data\\CSVs\\data.csv', cur_path)
+    # Raise value error if target_file does not end with .csv.
+    if not target_file.endswith(".csv"):
+        raise ValueError("Invalid target file format. Must have a .csv at the end of the file name.")
+
+    try:
     
-    # Put data.csv into numpy array.
-    data_np = genfromtxt(data_path, delimiter=',')
+        # Get absolute current path.
+        cur_path = os.path.dirname(__file__)
+
+        # Get absolute path to the data.csv file.
+        data_path = os.path.relpath('..\\data\\CSVs\\' + target_file, cur_path)
+        
+        # Put data.csv into numpy array.
+        data_np = genfromtxt(data_path, delimiter=',')
+
+    except:
+
+        raise ValueError("No such target directory exists.")
 
     # Delete header row.
     data_np = np.delete(data_np, (0), axis=0)
