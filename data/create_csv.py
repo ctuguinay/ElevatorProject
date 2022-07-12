@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     sortedRows = []
 
-    # Open the CSV file that we will be writing to.
+    # Open the CSV file that we will be reading.
     with open("CSVs/data.csv", mode='r', newline='') as file:
 
         # Define the CSV writer.
