@@ -24,15 +24,18 @@ if __name__ == "__main__":
         writer = csv.writer(file, delimiter=',', quotechar='"')
 
         # Iterate through the given number of people that will enter the building in a day.
-        for i in range(persons):
+        for id in range(persons):
 
-            # Create a new person's elevator route throughout the day
+            # Create a new person's elevator route throughout the day.
             person = Person(floors)
+
+            # Set unique person ID.
+            person_id = id + 1
 
             for call in person.calls:
 
                 # Write their information to the CSV
-                row = [call.time, call.start_floor, call.dest_floor, person.weight]
+                row = [person_id, call.time, call.start_floor, call.dest_floor, person.weight]
                 writer.writerow(row)
 
     sortedRows = []
@@ -44,7 +47,7 @@ if __name__ == "__main__":
         reader = csv.reader(file, delimiter=',', quotechar='"')
 
         # Sort the rows.
-        sortedRows = sorted(reader, key=lambda row: row[0], reverse=False)
+        sortedRows = sorted(reader, key=lambda row: row[1], reverse=False)
 
     
     # Open the CSV file that we will be writing to.
@@ -54,7 +57,7 @@ if __name__ == "__main__":
         writer = csv.writer(file, delimiter=',', quotechar='"')
 
         # Write the header row.
-        first_row = ["time_in_seconds", "start_floor", "dest_floor", "weight"]
+        first_row = ["person_id", "time_in_seconds", "start_floor", "dest_floor", "weight"]
         writer.writerow(first_row)
 
         # Iterate through all the sorted rows.
