@@ -1,10 +1,19 @@
 from classes.Person import Person
 import csv
 import argparse
+import sys
 
-if __name__ == "__main__":
+def argparse_create(args):
+    """
+    Parser to parse this script's arguments that pertain to our generated data.
 
-    # Parser to parse this script's arguments that pertain to our generated data.
+    Args:
+        args: User inputted arguments that have yet to be parsed.
+
+    Returns:
+        parsed_args: Parsed user inputted arguments.
+    """
+
     parser = argparse.ArgumentParser(description='Argument parser for creating the genereated dataset CSVs.')
 
     parser.add_argument("--set_persons", type=int,
@@ -64,7 +73,14 @@ if __name__ == "__main__":
         default=900) # 15 mins.
 
     # Parse arguments.
-    args = parser.parse_args()
+    parsed_args = parser.parse_args(args)
+
+    return parsed_args
+    
+if __name__ == "__main__":
+
+    # Get parsed args.
+    args = argparse_create((sys.argv[1:]))
 
     # Set the arguments as variables.
     persons = args.set_persons
