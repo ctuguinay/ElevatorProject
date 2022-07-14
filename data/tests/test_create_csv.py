@@ -3,6 +3,9 @@ import sys
 from create_csv import argparse_create
 
 def test_default_argparse_create():
+    """
+    Test if argument types are correct.
+    """
 
     # Parse arguments.
     args = argparse_create([])
