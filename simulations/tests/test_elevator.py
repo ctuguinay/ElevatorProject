@@ -3,6 +3,10 @@ from simulations.classes.Elevator import Elevator
 import pytest
 
 def test_elevator():
+    """
+    Tests if the Elevator class is working properly.
+    """
+    
     start_floor = 1
     top_floor = 8
     wait_time = 5
@@ -21,15 +25,22 @@ def test_elevator():
 
     assert elevator.open_door() == 30005
 
+    elevator_state = elevator.go_to_floor(1.5)
+
+    assert elevator_state[0] == 30007.5
+    assert elevator_state[1] == 1.5
+    assert elevator_state[2] == {1:False, 2: False, 3: False, 4: True}
+    assert elevator_state[3] == {}
+
+
     elevator_state = elevator.go_to_floor(4)
 
     assert elevator_state[0] == 30020
-
     assert elevator_state[1] == 4
-
     assert elevator_state[2] == {1:False, 2: False, 3: False, 4: False}
-
     assert elevator_state[3] == {'1': 4, '3': 4}
+
+    assert elevator.close_door() == 30025
 
 
 

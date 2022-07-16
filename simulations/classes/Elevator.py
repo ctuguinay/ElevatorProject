@@ -23,7 +23,6 @@ class Elevator(object):
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
     """
 
-
     def __init__(self, start_floor, top_floor, wait_time, time, elevator_speed, persons_dictionary, buttons_pressed):
         """
         Initialize elevator object with the given parameters.
@@ -69,8 +68,9 @@ class Elevator(object):
             buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
         """
 
-        if button_pressed not in range (self.top_floor + 1):
-            raise ValueError("The " + button_pressed + " floor does not exist.")
+        if button_pressed > self.top_floor or button_pressed < 1:
+            raise ValueError("Target floor " + button_pressed + " is not in range of floors.")
+
         self.buttons_pressed[button_pressed] = True
         return self.button_pressed
 
@@ -116,20 +116,23 @@ class Elevator(object):
         Moves the elevator from its current floor to target_floor and unloads everybody.
 
         Args:
-            target_floor: Integer representing the floor that the elevator will go to.
+            target_floor: Float representing the floor that the elevator will go to.
 
         Returns:
             elevator_state: Array containing the elevator's time, current location, buttons pressed, and persons that left the elevator at the target floor.
         """
 
-        if target_floor not in range(self.top_floor + 1):
+        if target_floor > self.top_floor or target_floor < 1:
             raise ValueError("Target floor " + target_floor + " is not in range of floors.")
 
         original_floor = self.current_floor
         time_taken = abs(target_floor - original_floor) * self.wait_time
         self.wait(time_taken)
-        self.buttons_pressed[target_floor] = False
         self.current_floor = target_floor
-        persons_that_left = {key:val for key, val in self.persons_in_elevator.items() if val == target_floor}
+        if isinstance(target_floor, int):
+            self.buttons_pressed[target_floor] = False
+            persons_that_left = {key:val for key, val in self.persons_in_elevator.items() if val == target_floor}
+        else:
+            persons_that_left = {}
         elevator_state = [self.time, self.current_floor, self.buttons_pressed, persons_that_left]
         return elevator_state
