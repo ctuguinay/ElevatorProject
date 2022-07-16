@@ -1,4 +1,4 @@
-from classes.controller import Controller
+from example_classes.controller import Controller
 
 if __name__ == "__main__":
     

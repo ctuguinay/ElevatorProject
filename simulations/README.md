@@ -20,5 +20,4 @@ python example.py
 * The GUI will lag a bit before starting. The following is what your screen should look like when it has loaded the
 elevator call:
 ![example](./imgs/example.png)
-* When you test this out further, it is good practice to make sure you are using the ```Controller``` class to control 
-elevator movement and elevator calls, since its name is "controller".
+* When you test this out further, it is good practice to make sure you are using the ```Controller``` class of the ```example_classes``` directory to control elevator movement and elevator calls, since its name is "controller".
