@@ -1,6 +1,6 @@
 import pytest
 import sys
-from create_csv import argparse_create
+from data.create_csv import argparse_create
 
 def test_default_argparse_create():
     """
