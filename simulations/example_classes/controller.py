@@ -1,5 +1,5 @@
-from classes.elevator import Elevator
-from classes.interface import Interface
+from example_classes.elevator import Elevator
+from example_classes.interface import Interface
 from threading import Thread
 
 
