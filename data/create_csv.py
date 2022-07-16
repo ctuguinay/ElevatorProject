@@ -1,4 +1,4 @@
-from classes.Person import Person
+from data.classes.Person import Person
 import csv
 import argparse
 import sys
