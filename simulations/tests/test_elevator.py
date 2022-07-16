@@ -2,13 +2,28 @@ from hashlib import new
 from simulations.classes.Elevator import Elevator
 import pytest
 
-def test_elevator():
+def test_bad_initialization_elevator():
     """
-    Tests if the Elevator class is working properly.
+    Tests if the State class is working properly with bad initialization.
     """
     
+    with pytest.raises(ValueError):
+        start_floor = 1.3434545
+        top_floor = 4
+        wait_time = 5
+        time = 30000
+        elevator_speed = 5
+        persons_dictionary = {'1':4}
+        buttons_pressed = {1:False, 2: False, 3: False, 4: False}
+        elevator = Elevator(start_floor, top_floor, wait_time, time, elevator_speed, persons_dictionary, buttons_pressed)
+
+def test_elevator():
+    """
+    Tests if the Elevator class is working properly with good intialization.
+    """
+
     start_floor = 1
-    top_floor = 8
+    top_floor = 4
     wait_time = 5
     time = 30000
     elevator_speed = 5
@@ -41,6 +56,3 @@ def test_elevator():
     assert elevator_state[3] == {'1': 4, '3': 4}
 
     assert elevator.close_door() == 30025
-
-
-

@@ -15,7 +15,6 @@ class Elevator(object):
         current_floor: Integer for the floor that the elevator is currently at.
         top_floor: Integer for the top floor that the elevator can visit.
         door_open: Boolean for if the door is open.
-        going_up: Boolean for if the elevator is (or was last) going up.
         wait_time: Integer for the number of seconds that the elevator waits before it closes the door.
         elevator_speed: Integer for the number of seconds that the elevator takes to go up or down 1 floor.
         persons_in_elevator: Dictionary where Keys are a person's ID (strings) and Values are a person's destination floor.
@@ -28,15 +27,36 @@ class Elevator(object):
         Initialize elevator object with the given parameters.
         """
 
+        if (type(start_floor) is not int):
+            raise ValueError("The start_floor arg is not of type int.")
         self.current_floor = start_floor
+
+        if (type(top_floor) is not int):
+            raise ValueError("The top_floor arg is not of type int.")
         self.top_floor = top_floor
+        
         self.busy = False
+
         self.door_open = False
-        self.going_up = True
+
+        if (type(wait_time) is not int):
+            raise ValueError("The wait_time arg is not of type int.")
         self.wait_time = wait_time
+
+        if (type(elevator_speed) is not int):
+            raise ValueError("The elevator_speed arg is not of type int.")
         self.elevator_speed = elevator_speed
+
+        if (type(persons_dictionary) is not dict):
+            raise ValueError("The persons_dictionary arg is not of type int.")
         self.persons_in_elevator = persons_dictionary
+
+        if (type(time) is not int):
+            raise ValueError("The time arg is not of type int.")
         self.time = time
+
+        if (type(buttons_pressed) is not dict):
+            raise ValueError("The buttons_pressed arg is not of type int.")
         self.buttons_pressed = buttons_pressed
 
     def add_passenger(self, passenger):
