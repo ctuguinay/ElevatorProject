@@ -81,3 +81,18 @@ class TimeList(object):
                 self.future.append(input_event)
         else:
             self.future = [input_event]
+
+    def has_next(self):
+        """
+        Tells whether or not there are still events left in the future list.
+
+        Returns:
+            has_next_value: Boolean for whether or not there are still events left in the future list.
+        """
+
+        if len(self.future) == 0:
+            has_next_value = False
+        else:
+            has_next_value = True
+
+        return has_next_value

@@ -13,7 +13,7 @@ def test_bad_initialization_state():
         wait_time = 5
         time = 30000
         elevator_speed = 5
-        persons_dictionary = {'1':4}
+        persons_dictionary = {'1': [4, 30000]}
         buttons_pressed = {1:False, 2: False, 3: False, 4: False}
         elevator = Elevator(start_floor, top_floor, wait_time, time, elevator_speed, persons_dictionary, buttons_pressed)
 

@@ -7,9 +7,9 @@
 cd simulations
 ```
 
-* Run the example code in Python:
+* Run the base case simulation in Python:
 ```
-python example.py
+python base_case_simulation.py
 ```
 
 * Explore the classes we will be using for Simulations at `classes`.

@@ -1,7 +1,11 @@
-from data.classes.Person import Person
 import csv
 import argparse
 import sys
+
+try:
+    from data.classes.Person import Person
+except:
+    from classes.Person import Person
 
 def argparse_create(args):
     """
@@ -103,7 +107,7 @@ if __name__ == "__main__":
         raise ValueError("Invalid target file format. Must have a .csv at the end of the file name.")
 
     # Open the CSV file that we will be writing to.
-    with open("CSVs/" + target_file, mode='w', newline='') as file:
+    with open("data/CSVs/" + target_file, mode='w+', newline='') as file:
 
         # Define the CSV writer.
         writer = csv.writer(file, delimiter=',', quotechar='"')
@@ -128,7 +132,7 @@ if __name__ == "__main__":
     sortedRows = []
 
     # Open the CSV file that we will be reading.
-    with open("CSVs/" + target_file, mode='r', newline='') as file:
+    with open("data/CSVs/" + target_file, mode='r', newline='') as file:
 
         # Define the CSV writer.
         reader = csv.reader(file, delimiter=',', quotechar='"')
@@ -138,7 +142,7 @@ if __name__ == "__main__":
 
     
     # Open the CSV file that we will be writing to.
-    with open("CSVs/" + target_file, mode='w', newline='') as file:
+    with open("data/CSVs/" + target_file, mode='w', newline='') as file:
 
         # Define the CSV writer.
         writer = csv.writer(file, delimiter=',', quotechar='"')

@@ -1,4 +1,7 @@
-from simulations.classes.Elevator import Elevator
+try:
+    from simulations.classes.Elevator import Elevator
+except:
+    from classes.Elevator import Elevator
 
 class State(object):
     """

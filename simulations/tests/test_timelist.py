@@ -39,13 +39,14 @@ def test_proper_timelist():
     """
     Tests a proper example of adding an event to a TimeList class and getting the current event.
     """
+
+    timelist = TimeList()
   
     time = 27005
     object_type = "Button Press"
     person_info = [859,27005,1,4,69.41447472292165] # [person_id,time_in_seconds,start_floor,dest_floor,weight]
     timelist_event = TimeListEvent(time, object_type, person_info)
 
-    timelist = TimeList()
     timelist.add_event(timelist_event)
 
     time = 27000
@@ -53,7 +54,6 @@ def test_proper_timelist():
     person_info = [819,27000,1,4,69.41447472292165] # [person_id,time_in_seconds,start_floor,dest_floor,weight]
     timelist_event = TimeListEvent(time, object_type, person_info)
 
-    timelist = TimeList()
     timelist.add_event(timelist_event)
 
     current_event = timelist.next_event()
@@ -61,3 +61,9 @@ def test_proper_timelist():
     assert current_event.time == 27000
     assert current_event.object_type == "Button Press"
     assert current_event.object == [819,27000,1,4,69.41447472292165]
+
+    assert timelist.has_next()
+
+    timelist.next_event()
+
+    assert (not timelist.has_next())
