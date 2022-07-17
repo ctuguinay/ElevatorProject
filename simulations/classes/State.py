@@ -1,6 +1,4 @@
-from torch import Value
 from simulations.classes.Elevator import Elevator
-
 
 class State(object):
     """
@@ -27,21 +25,21 @@ class State(object):
         """
 
         if (type(up_calls) is not dict):
-            raise ValueError("The up_calls arg is not of type dictionary.")
+            raise TypeError("The up_calls arg is not of type dictionary.")
         self.up_calls = up_calls
 
         if (type(down_calls) is not dict):
-            raise ValueError("The down_calls arg is not of type dictionary.")
+            raise TypeError("The down_calls arg is not of type dictionary.")
         self.down_calls = down_calls
 
         if (type(current_intended_destination) is not int):
-            raise ValueError("The current_intended_destionation arg is not of type int.")
+            raise TypeError("The current_intended_destionation arg is not of type int.")
         self.current_intended_destination = current_intended_destination
 
         if (type(time) is not int):
-            raise ValueError("The time arg is not of type int.")
+            raise TypeError("The time arg is not of type int.")
         self.time = time
 
         if (type(elevator) is not Elevator):
-            raise ValueError("The elevator arg is not of type Elevator.")
+            raise TypeError("The elevator arg is not of type Elevator.")
         self.elevator = elevator

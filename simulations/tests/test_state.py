@@ -7,7 +7,7 @@ def test_bad_initialization_state():
     Tests if the State class is working properly with bad initialization.
     """
     
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         start_floor = 1
         top_floor = 4
         wait_time = 5
