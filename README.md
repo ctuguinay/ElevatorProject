@@ -2,7 +2,7 @@
 
 Head to the sub-directories `/data`, `/simulations`, and `/visualizations` for further content.
 
-### Debugging:
+### Testing:
 
 * Setup the environment properly with the following:
 ```
