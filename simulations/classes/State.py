@@ -36,7 +36,7 @@ class State(object):
         self.down_calls = down_calls
 
         if (type(current_intended_destination) is not int):
-            raise TypeError("The current_intended_destionation arg is not of type int.")
+            raise TypeError("The current_intended_destination arg is not of type int.")
         self.current_intended_destination = current_intended_destination
 
         if (type(time) is not int):
