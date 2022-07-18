@@ -24,7 +24,7 @@ class Elevator(object):
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
     """
 
-    def __init__(self, start_floor, top_floor, wait_time, time, elevator_speed, persons_dictionary, buttons_pressed):
+    def __init__(self, start_floor, top_floor, persons_dictionary, buttons_pressed):
         """
         Initialize elevator object with the given parameters.
         """
@@ -39,23 +39,9 @@ class Elevator(object):
         
         self.busy = False
 
-        self.door_open = False
-
-        if (type(wait_time) is not int):
-            raise TypeError("The wait_time arg is not of type int.")
-        self.wait_time = wait_time
-
-        if (type(elevator_speed) is not int):
-            raise TypeError("The elevator_speed arg is not of type int.")
-        self.elevator_speed = elevator_speed
-
         if (type(persons_dictionary) is not dict):
             raise TypeError("The persons_dictionary arg is not of type int.")
         self.persons_in_elevator = persons_dictionary
-
-        if (type(time) is not int):
-            raise TypeError("The time arg is not of type int.")
-        self.time = time
 
         if (type(buttons_pressed) is not dict):
             raise TypeError("The buttons_pressed arg is not of type int.")

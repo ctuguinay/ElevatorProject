@@ -22,25 +22,7 @@ def loadTimeList(reader, timelist):
 
     return timelist
 
-def defineCurrentState(current_event, current_state):
-    """
-    Modifies the current_state object with the event that it is given.
-
-    Args:
-        current_event: TimeListEvent object representing the most recent event in the simulation.
-        current_state: State object representing the current state of the simulation.
-
-    Returns:
-        current_state: State object that has been modified to take into account the most recent event in the simulation.
-    """
-
-    """
-    WHAT NEEDS TO BE DONE: Modify current_state in correspondance with the current_event arg.
-    """
-
-    return current_state
-
-def useState(timelist, current_state):
+def useState(timelist, current_state, current_event):
     """
     Makes a single action using the current_state and modifies both the timelist and the current state to match the action.
 
@@ -97,24 +79,23 @@ if __name__ == "__main__":
     # Initialize Elevator.
     start_floor = 1
     top_floor = 4
-    wait_time = 5
+    wait_time = 15
     time = 27000
     elevator_speed = 5
     persons_dictionary = {}
     buttons_pressed = {1:False, 2: False, 3: False, 4: False}
-    elevator = Elevator(start_floor, top_floor, wait_time, time, elevator_speed, persons_dictionary, buttons_pressed)
+    elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
 
     # Initialize current_state.
-    up_calls = {1:False, 2: False, 3: False, 4: False}
-    down_calls = {1:False, 2: False, 3: False, 4: False}
-    current_intended_destination = 1
-    current_state = State(up_calls, down_calls, current_intended_destination, time, elevator)
+    up_calls = {1:[], 2:[], 3:[], 4:[]}
+    down_calls = {1:[], 2:[], 3:[], 4:[]}
+    current_intended_destination = None
+    current_state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
 
     # Repeat until no more events in timelist.
     while timelist.has_next():
         current_event = timelist.next_event()
-        current_state = defineCurrentState(current_event, current_state)
-        timelist, result_state = useState(timelist, current_state)
+        timelist, result_state = useState(timelist, current_state, current_event)
         total_time = getTotalEventTimes(result_state) + total_time
         current_state = result_state
 

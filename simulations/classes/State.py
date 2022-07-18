@@ -22,7 +22,7 @@ class State(object):
         elevator: Elevator object which the simulation runs on.
     """
 
-    def __init__(self, up_calls, down_calls, current_intended_destination, time, elevator):
+    def __init__(self, up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator):
         """
         Initialize state object with the given parameters.
         """
@@ -42,6 +42,15 @@ class State(object):
         if (type(time) is not int):
             raise TypeError("The time arg is not of type int.")
         self.time = time
+
+        if (type(elevator_speed) is not int):
+            raise TypeError("The elevator_speed arg is not of type int")
+        self.elevator_speed = elevator_speed
+
+
+        if (type(wait_time) is not int):
+            raise TypeError("The wait_time arg is not of type int")
+        self.wait_time = wait_time
 
         if (type(elevator) is not Elevator):
             raise TypeError("The elevator arg is not of type Elevator.")
