@@ -29,6 +29,7 @@ def loadTimeList(reader, timelist):
             continue
         row_obj = HallCall(
             int(row[0]), # person_id
+            float(row[1]), # time of the call
             int(row[2]), # start_floor
             int(row[3]), # dest floor
             float(row[4]) # weight
@@ -122,7 +123,7 @@ def useState(timelist, current_state, current_event, model):
         return timelist, current_state, added_time
     
     # ask the model what to do
-    command = Model(current_state)
+    command = model.get_command(current_state)
     if type(command) is Idle:
         # TODO Make any changes that must be made in the context of an Idle command (this might be no changes)
         pass
@@ -197,8 +198,8 @@ if __name__ == "__main__":
     current_state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
 
     # Repeat until no more events in timelist.
+    model = Model()
     while timelist.has_next():
-        model = Model() # A dummy model that just idles every time
         current_event = timelist.next_event()
         timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
         # total_time = getTotalEventTimes(result_state) + total_time

@@ -23,7 +23,7 @@ class HallCall:
         weight: weight of the person
     """
 
-    def __init__(self, time, person_id, start_floor, dest_floor, weight):
+    def __init__(self, person_id, time, start_floor, dest_floor, weight):
         if (type(time) is not int and type(time) is not float):
             raise TypeError("The argument time is not numeric")
         self.time = time
