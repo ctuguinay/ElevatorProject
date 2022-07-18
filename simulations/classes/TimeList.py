@@ -9,7 +9,7 @@ class TimeListEvent(object):
 
     Attributes:
         time: Integer for the time of the simulation in seconds.
-        object_type: String describing event type.
+        object_type: String describing event type. One of: "Hall Call", "Arrival", and "Door Close"
         object: Object storing information about event.
     """
 
@@ -18,8 +18,8 @@ class TimeListEvent(object):
         Initialize timelist event object with the given parameters.
         """
         
-        if (type(time) is not int):
-            raise TypeError("The time arg is not of type int.")
+        if (type(time) is not int and type(time) is not float):
+            raise TypeError("The time arg is neither of type int nor of type float.")
         self.time = time
 
         if (type(object_type) is not str):
