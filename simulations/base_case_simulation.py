@@ -100,7 +100,8 @@ def useState(timelist, current_state, current_event, model):
     current_state.time = current_event.time
     
     if current_event.object_type == "Arrival":
-        # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false
+        # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false and
+        # computing added_time
         pass
     elif current_event.object_type == "Hall Call":
         # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
