@@ -23,10 +23,10 @@ class State(object):
         down_calls: Dictionary where the Keys is the number of a floor and the Values are lists of HallCalls representing people that pressed the down button on the floor.
         current_intended_destination: Integer for the floor where the elevator is currently trying to go to. None if the elevator
             doesn't intend to go anywhere.
+        time: Integer for time of the simulation in seconds.
         elevator_speed: Integer for the speed of all elevators in "seconds per traversal of single floor"
         wait_time: Integer for the time an elevator waits on each floor for people to get in. This represents the physical processes
             of opening the door, waiting for people to enter, and closing the door
-        time: Integer for time of the simulation in seconds.
         elevator: Elevator object which the simulation runs on.
     """
 
