@@ -203,7 +203,7 @@ if __name__ == "__main__":
     while timelist.has_next():
         current_event = timelist.next_event()
         timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
-        # total_time = getTotalEventTimes(result_state) + total_time
+        total_time = total_time + added_time
         current_state = result_state
 
     # Prints out the total time.

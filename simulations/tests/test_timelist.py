@@ -8,15 +8,13 @@ def test_bad_initialization_timelist_event():
     
     with pytest.raises(TypeError):
         time = 1.131434
-        object_type = "Button Press"
         person_info = [859,27000,1,4,69.41447472292165] # [person_id,time_in_seconds,start_floor,dest_floor,weight]
-        timelist_event = TimeListEvent(time, object_type, person_info)
+        timelist_event = TimeListEvent(time, person_info)
     
     with pytest.raises(TypeError):
         time = 1
         object_type = 1
-        person_info = [859,27000,1,4,69.41447472292165] # [person_id,time_in_seconds,start_floor,dest_floor,weight]
-        timelist_event = TimeListEvent(time, object_type, person_info)
+        timelist_event = TimeListEvent(time, object_type)
 
 def test_bad_add_timelist():
     """
