@@ -2,4 +2,4 @@
 # Make sure you are using AT LEAST Python 3.8.
 
 numpy # For powerful N-d arrays.
-maplotlib # Visualizations.
+matplotlib # Visualizations.

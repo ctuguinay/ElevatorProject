@@ -53,8 +53,8 @@ class Move(Command):
     """
 
 
-    def __init__(self, inteneded_destination, if_up):
+    def __init__(self, intended_destination, if_up):
         if (type(if_up) is not bool):
             raise TypeError("Argument if_up is not of type bool")
-        super().__init__(inteneded_destination)
+        super().__init__(intended_destination)
         self.if_up = if_up

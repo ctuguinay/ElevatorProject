@@ -79,7 +79,7 @@ class Elevator(object):
             raise TypeError("Target floor " + button_pressed + " is not in range of floors.")
 
         self.buttons_pressed[button_pressed] = True
-        return self.button_pressed
+        return self.buttons_pressed
 
 
     # def wait(self, seconds):
