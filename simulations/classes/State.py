@@ -2,7 +2,13 @@ try:
     from simulations.classes.Elevator import Elevator
 except:
     from classes.Elevator import Elevator
+from dataclasses import dataclass
+from typing import Union
+from simulations.classes.ClassUtilities import validated
+from simulations.classes.EventObjects import HallCall
 
+@validated
+@dataclass
 class State(object):
     """
     Keeps track of the past, current, and result state of each increment of the simulation.
@@ -30,36 +36,10 @@ class State(object):
         elevator: Elevator object which the simulation runs on.
     """
 
-    def __init__(self, up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator):
-        """
-        Initialize state object with the given parameters.
-        """
-
-        if (type(up_calls) is not dict):
-            raise TypeError("The up_calls arg is not of type dictionary.")
-        self.up_calls = up_calls
-
-        if (type(down_calls) is not dict):
-            raise TypeError("The down_calls arg is not of type dictionary.")
-        self.down_calls = down_calls
-
-        if (type(current_intended_destination) is not int and current_intended_destination is not None):
-            raise TypeError("The current_intended_destination arg is not of type int.")
-        self.current_intended_destination = current_intended_destination
-
-        if (type(time) is not int):
-            raise TypeError("The time arg is not of type int.")
-        self.time = time
-
-        if (type(elevator_speed) is not int):
-            raise TypeError("The elevator_speed arg is not of type int")
-        self.elevator_speed = elevator_speed
-
-
-        if (type(wait_time) is not int):
-            raise TypeError("The wait_time arg is not of type int")
-        self.wait_time = wait_time
-
-        if (type(elevator) is not Elevator):
-            raise TypeError("The elevator arg is not of type Elevator.")
-        self.elevator = elevator
+    up_calls: dict[int, list[HallCall]]
+    down_calls: dict[int, list[HallCall]]
+    current_intended_destination: Union[int, None]
+    time: int
+    elevator_speed: int
+    wait_time: int
+    elevator: Elevator

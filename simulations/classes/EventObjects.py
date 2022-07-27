@@ -4,6 +4,13 @@ A file to store the classes that get passed into TimeListEvents, describing spec
 HallCalls are also used as elements of the lists that are the values in up_calls and down_calls in the State object.
 """
 
+from typing import Union
+from simulations.classes.ClassUtilities import validated
+from dataclasses import dataclass
+
+
+@validated
+@dataclass
 class HallCall:
     """
     An object used to describe the event of an individual's hall call
@@ -22,34 +29,21 @@ class HallCall:
         dest_floor: the floor that the caller wants to go to
         weight: weight of the person
     """
+    person_id: int
+    time: Union[int, float]
+    start_floor: int
+    dest_floor: int
+    weight: float
 
-    def __init__(self, person_id, time, start_floor, dest_floor, weight):
-        if (type(time) is not int and type(time) is not float):
-            raise TypeError("The argument time is not numeric")
-        self.time = time
-
-        if (type(person_id) is not int):
-            raise TypeError("The argument person_id is not of type int")
-        self.person_id = person_id
-
-        if (type(start_floor) is not int):
-            raise TypeError("The argument start_floor is not of type int")
-        self.start_floor = start_floor
-
-        if (type(dest_floor) is not int):
-            raise TypeError("The argument dest_floor is not of type int")
-        self.dest_floor = dest_floor
-
-        if (type(weight) is not float):
-            raise TypeError("The argument weight is not of type float")
-        self.weight = weight
-    
     def __str__(self):
         return f"(person_id:{self.person_id}, start_floor:{self.start_floor}, dest_floor:{self.dest_floor}, weight:{self.weight})"
 
     def __repr__(self):
         return self.__str__(self)
 
+
+@validated
+@dataclass
 class Arrival:
     """
     An object to be used in a TimeListEvent, used to describe the event of arriving at a floor
@@ -58,10 +52,7 @@ class Arrival:
     Attributes:
         floor: the floor we're arriving at
     """
-    def __init__(self, floor):
-        if (type(floor) is not int):
-            raise TypeError("The argument floor is not of type int")
-        self.floor = floor
+    floor: int
 
 class DoorClose:
     """
