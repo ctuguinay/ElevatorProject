@@ -1,11 +1,19 @@
+from lib2to3.pgen2.token import PERCENT
+from ElevatorProject.simulations.classes.EventObjects import Arrival, DoorClose
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
 from classes.EventObjects import HallCall
 from classes.Model import Model
 from classes.Commands import Idle, OpenCloseDoors, Move
+from math import log1p, e
 import csv
 import os
+
+
+BOTTOM_FLOOR = 1
+HEIGHT = {1: 0, 2: None, 3: None, 4: None} # A height dict mapping each floor to its height above the ground floor
+    # to compute the amount of time it takes to traverse a floor.
 
 
 def loadTimeList(reader, timelist):
@@ -42,7 +50,7 @@ def loadTimeList(reader, timelist):
 
     return timelist
 
-def useState(timelist, current_state, current_event, model):
+def useState(timelist: TimeList, current_state: State, current_event: TimeListEvent, model: Model) -> tuple[TimeList, State, int]:
     """
     Makes a single action using the current_state and modifies both the timelist and the current state to match the action.
 
@@ -126,18 +134,54 @@ def useState(timelist, current_state, current_event, model):
     # ask the model what to do
     command = model.get_command(current_state)
     if type(command) is Idle:
-        # TODO Make any changes that must be made in the context of an Idle command (this might be no changes)
         pass
     elif type(command) is Move:
-        # TODO Make any changes that must be made in the context of a Move command, including
-        # adding an Arrival event to the timelist, indicating the event of us arriving at the floor. Also
-        # make checks to ensure we're not going a floor down from the ground floor or a floor up from the top
-        # floor (throw an error if we are)
-        pass
+
+        if command.intended_destination > current_state.elevator.top_floor \
+           or command.intended_destination < BOTTOM_FLOOR:
+            raise ValueError('Next commmand had unexpected destination')
+        
+        def journey_time() -> int:
+            start = current_state.elevator.current_floor
+            end = command.intended_destination
+            # if constant speed
+            constant_time = abs(HEIGHT[start] - HEIGHT[end]) // current_state.elevator_speed
+
+            # if variable speed (like realistic) will be more complicated
+            # one possible approach below using sigmoid functions to model the accelerating and
+            # deccelerating periods, solved for the distance traversed in a 
+            PERCENT_ACCELERATING = 0.2 # Represents the percentage of time it takes to accelerate to
+                # top speed when going from one floor to the one immediately above.
+            FLOORS_PER_SECOND = 2 # Represents the rate of floors per second when only considering one
+                # acceleration and one deceleration with constant time in the middle. The current
+                # value is of course unrealistic, and it should be noted that the current equation
+                # does get a lot worse at describing the acceleration for lower values.
+
+            def variable_if_arrival():
+                """ 
+                Gives the time taken to traverse the floors if the elevator is stopping at the
+                next floor.
+                """
+                floors = abs(start - end)
+                return (((FLOORS_PER_SECOND / 4) ** -1) * floors + 5 * PERCENT_ACCELERATING - 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) - 5)) // 5
+
+            def variable_if_continuing():
+                """
+                Gives the time taken to traverse the floors if the elevator is not stopping at
+                the next floor.
+                """
+                floors = abs(start - end)
+                return (((FLOORS_PER_SECOND / 4) ** -1) * floors + 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) + 5)) // 5 + PERCENT_ACCELERATING
+
+            # temporarily
+            return constant_time
+        
+        arrival_time = current_state.time + journey_time()
+        timelist.add_event(arrival_time, 'Arrival', Arrival(command.intended_destination))
+
     elif type(command) is OpenCloseDoors:
-        # TODO Make any changes that must be made in the context of an OpenCloseDoors command, including
-        # adding a DoorClose to the timelist, indicating the ending of the process of "letting people in"
-        pass
+        # Assumes that door closes happen immediately
+        timelist.add_event(current_state.time, 'Door Close', DoorClose())
     else:
         raise ValueError("Return from Model had unexpected type")
 
