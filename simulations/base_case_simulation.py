@@ -1,3 +1,5 @@
+from lib2to3.pygram import pattern_symbols
+from math import floor
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
@@ -98,17 +100,32 @@ def useState(timelist, current_state, current_event, model):
     # output (which is the command telling us the next thing to do).
     # For example, we advance the state's time to the time of this event
     current_state.time = current_event.time
+    timelist.next_method
+
     
     if current_event.object_type == "Arrival":
         # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false and
         # computing added_time
-        pass
+        current_state.elevator.moving = False
+        # update the current_state.elevator.persons_in_elevator
+        for person in Elevator.persons_in_elevator:
+            if person.value[0] == current_event.floor:
+                added_time += current_event.time - person[2]
+                Elevator.persons_in_elevator.remove(person)
+        current_state.elevator.letting_people_in = True
+    
     elif current_event.object_type == "Hall Call":
         # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
-        pass
+        person = []
+        person.append(HallCall.person_id, HallCall.dest_floor, current_event.time)
+        Elevator.add_passenger(person)
+
     elif current_event.object_type == "Door Close":
         # TODO: Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
-        pass
+        current_state.elevator.letting_people_in = False
+        current_state.elevator.moving = True
+    
+
     else:
         raise ValueError("Next event had unexpected type")
     
@@ -121,6 +138,12 @@ def useState(timelist, current_state, current_event, model):
     if current_state.elevator.letting_people_in:
         # TODO: If anyone's on this floor, change state to reflect letting them in to this elevator. We
         # again can't change our behavior, so no need to call the Model, just return with the state we've changed.
+        current_state.elevator.moving = False
+
+        # update the passenger
+        # person.behavior == "Hall Call"
+        # Elevator.persons_in_elevator.add(person)
+        
         return timelist, current_state, added_time
     
     # ask the model what to do
