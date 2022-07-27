@@ -1,5 +1,3 @@
-from lib2to3.pygram import pattern_symbols
-from math import floor
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
