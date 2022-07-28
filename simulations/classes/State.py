@@ -36,8 +36,8 @@ class State(object):
         elevator: Elevator object which the simulation runs on.
     """
 
-    up_calls: dict[int, list[HallCall]]
-    down_calls: dict[int, list[HallCall]]
+    up_calls: dict
+    down_calls: dict
     current_intended_destination: Union[int, None]
     time: int
     elevator_speed: int
