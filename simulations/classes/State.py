@@ -5,7 +5,6 @@ except:
 from dataclasses import dataclass
 from typing import Union
 from simulations.classes.ClassUtilities import validated
-from simulations.classes.EventObjects import HallCall
 
 @validated
 @dataclass
