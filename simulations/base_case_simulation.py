@@ -183,7 +183,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
             if destination == current_state.elevator.current_floor:
                 removal.append(person)
         for person in removal:
-            current_state.elevator.persons_in_elevator.pop()
+            current_state.elevator.persons_in_elevator.pop(person)
 
         if current_state.current_intended_destination < current_state.elevator.current_floor:
             calls = current_state.down_calls
@@ -197,6 +197,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         current_state.elevator.buttons_pressed[current_state.elevator.current_floor] = False
 
         timelist.add_event(current_state.time + current_state.wait_time, 'Door Close', DoorClose())
+
     else:
         raise ValueError("Return from Model had unexpected type")
 
