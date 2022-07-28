@@ -116,18 +116,31 @@ def validated(cls):
             exec(f'from {complex[0]} import {complex[1]}')
         try:
             exec(f'from typing import Union, Optional\n'
+                 f'NoneType = type(None)\n'
                  f'def func{inspect.signature(old_init)}:\n'
                  f'\tvalidation({text})', temp, temp)
             break
         except NameError as error:
             try:
-                exec(f'import {error.name}', temp, temp)
-                exec(f'def func{inspect.signature(old_init)}:\n'
-                     f'\tvalidation({text})', temp, temp)
-            except:
-                exec(f'from typing import {error.name}', temp, temp)
-                exec(f'def func{inspect.signature(old_init)}:\n'
-                     f'\tvalidation({text})', temp, temp)
+                try:
+                    exec(f'import {error.name}', temp, temp)
+                except:
+                    try:
+                        exec(f'from typing import {error.name}', temp, temp)
+                    except:
+                        exec(f'from types import {error.name}', temp, temp)
+            except AttributeError:
+                try:
+                    name = error.args[0].split("'")[1]
+                    exec(f'import {name}', temp, temp)
+                except:
+                    try:
+                        exec(f'from typing import {name}', temp, temp)
+                    except:
+                        exec(f'from types import {name}', temp, temp)
+            exec(f'def func{inspect.signature(old_init)}:\n'
+                        f'\tvalidation({text})', temp, temp)
+
 
     # Changes attributes of the new initialization to match the old
     new_init = update_wrapper(temp['func'], old_init)
