@@ -1,5 +1,4 @@
-from lib2to3.pgen2.token import PERCENT
-from ElevatorProject.simulations.classes.EventObjects import Arrival, DoorClose
+from simulations.classes.EventObjects import Arrival, DoorClose
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
@@ -50,7 +49,7 @@ def loadTimeList(reader, timelist):
 
     return timelist
 
-def useState(timelist: TimeList, current_state: State, current_event: TimeListEvent, model: Model) -> tuple[TimeList, State, int]:
+def useState(timelist: TimeList, current_state: State, current_event: TimeListEvent, model: Model) -> tuple:
     """
     Makes a single action using the current_state and modifies both the timelist and the current state to match the action.
 
@@ -133,8 +132,11 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     
     # ask the model what to do
     command = model.get_command(current_state)
+    current_state.current_intended_destination = command.intended_destination
+
     if type(command) is Idle:
-        pass
+        current_state.elevator.moving = True
+
     elif type(command) is Move:
 
         if command.intended_destination > current_state.elevator.top_floor \
@@ -144,18 +146,11 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         def journey_time() -> int:
             start = current_state.elevator.current_floor
             end = command.intended_destination
-            # if constant speed
-            constant_time = abs(HEIGHT[start] - HEIGHT[end]) // current_state.elevator_speed
 
-            # if variable speed (like realistic) will be more complicated
             # one possible approach below using sigmoid functions to model the accelerating and
-            # deccelerating periods, solved for the distance traversed in a 
+            # deccelerating periods, solved for the distance traversed
             PERCENT_ACCELERATING = 0.2 # Represents the percentage of time it takes to accelerate to
                 # top speed when going from one floor to the one immediately above.
-            FLOORS_PER_SECOND = 2 # Represents the rate of floors per second when only considering one
-                # acceleration and one deceleration with constant time in the middle. The current
-                # value is of course unrealistic, and it should be noted that the current equation
-                # does get a lot worse at describing the acceleration for lower values.
 
             def variable_if_arrival():
                 """ 
@@ -163,7 +158,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
                 next floor.
                 """
                 floors = abs(start - end)
-                return (((FLOORS_PER_SECOND / 4) ** -1) * floors + 5 * PERCENT_ACCELERATING - 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) - 5)) // 5
+                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
+                        5 * PERCENT_ACCELERATING - 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) - 5)) // 5
 
             def variable_if_continuing():
                 """
@@ -171,22 +167,38 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
                 the next floor.
                 """
                 floors = abs(start - end)
-                return (((FLOORS_PER_SECOND / 4) ** -1) * floors + 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) + 5)) // 5 + PERCENT_ACCELERATING
+                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
+                        0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) + 5)) // 5 + PERCENT_ACCELERATING
 
             # temporarily
-            return constant_time
-        
+            return current_state.elevator_speed
+
         arrival_time = current_state.time + journey_time()
         timelist.add_event(arrival_time, 'Arrival', Arrival(command.intended_destination))
 
     elif type(command) is OpenCloseDoors:
-        # Assumes that door closes happen immediately
-        timelist.add_event(current_state.time, 'Door Close', DoorClose())
+
+        removal = []
+        for person, destination in current_state.elevator.persons_in_elevator.values():
+            if destination == current_state.elevator.current_floor:
+                removal.append(person)
+        for person in removal:
+            current_state.elevator.persons_in_elevator.pop()
+
+        if current_state.current_intended_destination < current_state.elevator.current_floor:
+            calls = current_state.down_calls
+        else:
+            calls = current_state.up_calls
+        for call in calls[current_state.elevator.current_floor]:
+            current_state.elevator.add_passenger([call.person_id, call.dest_floor])
+        calls[current_state.elevator.current_floor] = []
+
+        current_state.elevator.letting_people_in = True
+        current_state.elevator.buttons_pressed[current_state.elevator.current_floor] = False
+
+        timelist.add_event(current_state.time + current_state.wait_time, 'Door Close', DoorClose())
     else:
         raise ValueError("Return from Model had unexpected type")
-
-    # set the new intended destination accordingly
-    current_state.current_intended_destination = command.intended_destination
 
     return timelist, current_state, added_time
 
