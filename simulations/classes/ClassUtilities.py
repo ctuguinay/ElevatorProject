@@ -139,7 +139,7 @@ def validated(cls):
                     except:
                         exec(f'from types import {name}', temp, temp)
             exec(f'def func{inspect.signature(old_init)}:\n'
-                        f'\tvalidation({text})', temp, temp)
+                 f'\tvalidation({text})', temp, temp)
 
 
     # Changes attributes of the new initialization to match the old
