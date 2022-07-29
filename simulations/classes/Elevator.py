@@ -1,11 +1,17 @@
+from dataclasses import dataclass
+from simulations.classes.ClassUtilities import validated
+
+
+@validated
+@dataclass
 class Elevator(object):
     """
     Elevator object to help us keep track of elevator parameters and functionalities.
 
     Args:
-        start_floor: Integer for the floor that the elevator starts at.
+        current_floor: Integer for the floor that the elevator starts at.
         top_floor: Integer for the highest floor that the elevator can visit.
-        persons_dictionary: Dictionary of all people in the elevator 
+        persons_in_elevator: Dictionary of all people in the elevator 
         where Keys are a person's ID (strings) and Values is an array with the person's destination floor as the
         0 index, the time they started waiting as the 1 index, and their weight as the 2 index.
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
@@ -21,29 +27,18 @@ class Elevator(object):
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
     """
 
-    def __init__(self, start_floor, top_floor, persons_dictionary, buttons_pressed):
-        """
-        Initialize elevator object with the given parameters.
-        """
+    current_floor: int
+    top_floor: int
+    persons_in_elevator: dict
+    buttons_pressed: dict
 
-        if (type(start_floor) is not int):
-            raise TypeError("The start_floor arg is not of type int.")
-        self.current_floor = start_floor
-
-        if (type(top_floor) is not int):
-            raise TypeError("The top_floor arg is not of type int.")
-        self.top_floor = top_floor
-        
+    def __post_init__(self):
+        """
+        Sets other fields of the Elevator object.
+        """       
         self.moving = False
         self.letting_people_in = False
 
-        if (type(persons_dictionary) is not dict):
-            raise TypeError("The persons_dictionary arg is not of type int.")
-        self.persons_in_elevator = persons_dictionary
-
-        if (type(buttons_pressed) is not dict):
-            raise TypeError("The buttons_pressed arg is not of type int.")
-        self.buttons_pressed = buttons_pressed
 
     def add_passenger(self, passenger):
         """

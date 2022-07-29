@@ -1,3 +1,9 @@
+from dataclasses import dataclass
+from typing import Union
+from simulations.classes.ClassUtilities import validated
+
+@validated
+@dataclass
 class TimeListEvent(object):
     """
     Keeps track of the information in an event in the simulation.
@@ -13,20 +19,10 @@ class TimeListEvent(object):
         object: Object storing information about event.
     """
 
-    def __init__(self, time, object_type, object):
-        """
-        Initialize timelist event object with the given parameters.
-        """
-        
-        if (type(time) is not int and type(time) is not float):
-            raise TypeError("The time arg is neither of type int nor of type float.")
-        self.time = time
+    time: Union[int, float]
+    object_type: str
+    object: object
 
-        if (type(object_type) is not str):
-            raise TypeError("The object_type arg is not of type string.")
-        self.object_type = object_type
-
-        self.object = object
 
 class TimeList(object):
     """

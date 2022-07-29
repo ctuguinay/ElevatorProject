@@ -2,6 +2,13 @@
 A list of commands that a model or algorithm can give to the elevator
 """
 
+from typing import Union
+from dataclasses import dataclass
+from simulations.classes.ClassUtilities import validated
+
+
+@validated
+@dataclass
 class Command():
     """
     Generic subclass for commands
@@ -13,10 +20,8 @@ class Command():
         intended_destination: the new intended destination for the elevator
     """
 
-    def __init__(self, intended_destination):
-        if (type(intended_destination) is not int and intended_destination is not None):
-            raise TypeError("The intended_destination arg is neither None nor of type int.")
-        self.intended_destination = intended_destination
+    intended_destination: Union[int, None]
+
 
 class Idle(Command):
     """
