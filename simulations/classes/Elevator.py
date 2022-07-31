@@ -25,6 +25,8 @@ class Elevator(object):
         moving: Boolean that is true if the elevator is moving (between floors), false otherwise.
         letting_people_in: Boolean that is true if the elevator is in the process of letting people in, false otherwise.
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
+        going_up: True if the elevator's doors are open and the elevator intends to go up, False if the doors are
+        open and it intends to go down, None if the doors are not open
     """
 
     current_floor: int
@@ -38,6 +40,7 @@ class Elevator(object):
         """       
         self.moving = False
         self.letting_people_in = False
+        self.going_up = None
 
 
     def add_passenger(self, passenger):

@@ -195,6 +195,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
             calls = current_state.up_calls
         else:
             calls = current_state.down_calls
+        current_state.elevator.going_up = command.going_up
         for call in calls[current_state.elevator.current_floor]:
             current_state.elevator.add_passenger([call.person_id, call.dest_floor])
         calls[current_state.elevator.current_floor] = []
