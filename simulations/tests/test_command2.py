@@ -8,33 +8,21 @@ def test_bad_command():
     with pytest.raises(TypeError):
         intended_dest = "hi"
         command = Command(intended_dest)
-    
-    with pytest.raises(TypeError):
-        intended_dest = 1.2
-        command = Command(intended_dest)
 
 def test_good_command():
-    intended_dest = 3
-    command = Command(intended_dest)
-    assert command.intended_destination == 3
-
-    intended_dest = None
-    command = Command(intended_dest)
-    assert command.intended_destination == None
+    
+    command = Command()
 
 
 def test_idle():
-    intended_dest = 3
-    command = Command(intended_dest)
-    idle = Idle(command.intended_destination)
-    assert idle.intended_destination == 3
+
+    idle = Idle()
 
 
 def test_openCloseDoors():
-    intended_dest = 3
-    command = Command(intended_dest)
-    ocd = OpenCloseDoors(command.intended_destination)
-    assert ocd.intended_destination == 3
+    if_going_up = False
+    ocd = OpenCloseDoors(if_going_up)
+    assert ocd.going_up == if_going_up
 
 def test_bad_move():
     with pytest.raises(TypeError):
@@ -44,7 +32,5 @@ def test_bad_move():
 
 def test_good_move():
     if_up = True
-    intended_dest = 3
-    move = Move(intended_dest, if_up)
-    assert move.intended_destination == 3
+    move = Move(if_up)
     assert move.if_up == True

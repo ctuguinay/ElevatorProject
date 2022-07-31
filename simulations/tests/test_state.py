@@ -19,11 +19,10 @@ def test_bad_initialization_state():
         # Initialize current_state.
         up_calls = {1:[], 2:[], 3:[], 4:[]}
         down_calls = []
-        current_intended_destination = None
         time = 27000
         elevator_speed = 5
         wait_time = 15
-        state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
+        state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
     with pytest.raises(TypeError):
         
@@ -37,11 +36,10 @@ def test_bad_initialization_state():
         # Initialize current_state.
         up_calls = {1:[], 2:[], 3:[], 4:[]}
         down_calls = {1:[], 2:[], 3:[], 4:[]}
-        current_intended_destination = None
         time = 27000
         elevator_speed = 5
         wait_time = 15.98743983749384739847
-        state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
+        state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
     with pytest.raises(TypeError):
 
@@ -51,11 +49,10 @@ def test_bad_initialization_state():
         # Initialize current_state.
         up_calls = {1:[], 2:[], 3:[], 4:[]}
         down_calls = {1:[], 2:[], 3:[], 4:[]}
-        current_intended_destination = None
         time = 27000
         elevator_speed = 5
         wait_time = 15
-        state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, not_an_elevator)
+        state = State(up_calls, down_calls, time, elevator_speed, wait_time, not_an_elevator)
 
 def test_good_intialization():
     """
@@ -72,8 +69,7 @@ def test_good_intialization():
     # Initialize current_state.
     up_calls = {1:[], 2:[], 3:[], 4:[]}
     down_calls = {1:[], 2:[], 3:[], 4:[]}
-    current_intended_destination = None
     time = 27000
     elevator_speed = 5
     wait_time = 15
-    state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
+    state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
