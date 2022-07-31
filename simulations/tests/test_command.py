@@ -1,6 +1,20 @@
 from simulations.classes.Commands import Command, Idle, OpenCloseDoors, Move
 import pytest
 
+def test_bad_init_command():
+    """
+    Test the bad initialization of command class
+    """
+
+    with pytest.raises(TypeError):
+        intended_destination = 2.234
+        command = Command(intended_destination)
+    
+    
+    with pytest.raises(TypeError):
+        intended_destination = {}
+        command = Command(intended_destination)
+
 
 def test_good_init_command():
     """
