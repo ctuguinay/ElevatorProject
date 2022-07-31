@@ -10,7 +10,7 @@ from classes.Commands import Idle, OpenCloseDoors, Move
 from math import log1p, e
 import csv
 import os
-from typing import Tuple, List
+from typing import Tuple, Dict
 
 BOTTOM_FLOOR = 1
 HEIGHT = {1: 0, 2: None, 3: None, 4: None} # A height dict mapping each floor to its height above the ground floor
@@ -209,30 +209,32 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
 
     return timelist, current_state, added_time
 
-def state_to_elevator_input(state:State) -> Tuple[int,List[bool],List[bool],List[bool]]:
+def state_to_elevator_input(state:State) -> Tuple[int,
+        Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
     """
     Arguments:
         state: the state to be transformed
     Takes a state and process it into the information the model is supposed to have
     when it gets called. Specifically, this returns, in order: the elevator's current
-    position, the buttons pressed within the elevator, the up_calls that have
-    been made, and the down_calls that have been made
+    position, the buttons pressed within the elevator (dict from floor num to if made), 
+    the up_calls that have been made (dict from floor num to if made), 
+    and the down_calls that have been made (dict from floor num to if made)
     """
     curr_pos = state.elevator.current_floor
     buttons_pressed = state.elevator.buttons_pressed
-    up_buttons = []
-    for call_list in state.up_calls.values():
+    up_buttons = {}
+    for floor, call_list in state.up_calls.items():
         if call_list == []:
-            up_buttons.append(False)
+            up_buttons[floor] = False
         else:
-            up_buttons.append(True)
+            up_buttons[floor] = True
     
-    down_buttons = []
-    for call_list in state.down_calls.values():
+    down_buttons = {}
+    for floor, call_list in state.down_calls.items():
         if call_list == []:
-            down_buttons.append(False)
+            down_buttons[floor] = False
         else:
-            down_buttons.append(True)
+            down_buttons[floor] = True
     return curr_pos, buttons_pressed, up_buttons, down_buttons
 
 # def getTotalEventTimes(result_state):
