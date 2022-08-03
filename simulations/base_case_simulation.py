@@ -5,10 +5,12 @@ from classes.TimeList import TimeList, TimeListEvent
 from classes.EventObjects import HallCall
 from classes.Model import Model
 from classes.Commands import Idle, OpenCloseDoors, Move
+
+
 from math import log1p, e
 import csv
 import os
-
+from typing import Tuple, Dict
 
 BOTTOM_FLOOR = 1
 HEIGHT = {1: 0, 2: None, 3: None, 4: None} # A height dict mapping each floor to its height above the ground floor
@@ -149,21 +151,17 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         return timelist, current_state, added_time
     
     # ask the model what to do
-    command = model.get_command(current_state)
-    current_state.current_intended_destination = command.intended_destination
+    curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
+    command = model.get_command(curr_pos, buttons_pressed, up_buttons, down_buttons)
 
     if type(command) is Idle:
-        current_state.elevator.moving = True
+        pass
 
     elif type(command) is Move:
-
-        if command.intended_destination > current_state.elevator.top_floor \
-           or command.intended_destination < BOTTOM_FLOOR:
-            raise ValueError('Next commmand had unexpected destination')
         
         def journey_time() -> int:
             start = current_state.elevator.current_floor
-            end = command.intended_destination
+            end = start + 1 # not sure what to do here... will speak to Mark -Raymond
 
             # one possible approach below using sigmoid functions to model the accelerating and
             # deccelerating periods, solved for the distance traversed
@@ -191,8 +189,16 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
             # temporarily
             return current_state.elevator_speed
 
+        arrival_floor = None
+        if Move.if_up == True:
+            arrival_floor = current_state.elevator.current_floor + 1
+        else:
+            arrival_floor = current_state.elevator.current_floor - 1
+        if arrival_floor < 1 or arrival_floor > current_state.elevator.top_floor:
+            # If the model gives us invalid instructions, just idle
+            return
         arrival_time = current_state.time + journey_time()
-        timelist.add_event(arrival_time, 'Arrival', Arrival(command.intended_destination))
+        timelist.add_event(arrival_time, 'Arrival', Arrival(arrival_floor))
 
     elif type(command) is OpenCloseDoors:
 
@@ -203,10 +209,11 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         for person in removal:
             current_state.elevator.persons_in_elevator.pop(person)
 
-        if current_state.current_intended_destination < current_state.elevator.current_floor:
-            calls = current_state.down_calls
-        else:
+        if command.going_up:
             calls = current_state.up_calls
+        else:
+            calls = current_state.down_calls
+        current_state.elevator.going_up = command.going_up
         for call in calls[current_state.elevator.current_floor]:
             current_state.elevator.add_passenger([call.person_id, call.dest_floor])
         calls[current_state.elevator.current_floor] = []
@@ -220,6 +227,34 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         raise ValueError("Return from Model had unexpected type")
 
     return timelist, current_state, added_time
+
+def state_to_elevator_input(state:State) -> Tuple[int,
+        Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
+    """
+    Arguments:
+        state: the state to be transformed
+    Takes a state and process it into the information the model is supposed to have
+    when it gets called. Specifically, this returns, in order: the elevator's current
+    position, the buttons pressed within the elevator (dict from floor num to if made), 
+    the up_calls that have been made (dict from floor num to if made), 
+    and the down_calls that have been made (dict from floor num to if made)
+    """
+    curr_pos = state.elevator.current_floor
+    buttons_pressed = state.elevator.buttons_pressed
+    up_buttons = {}
+    for floor, call_list in state.up_calls.items():
+        if call_list == []:
+            up_buttons[floor] = False
+        else:
+            up_buttons[floor] = True
+    
+    down_buttons = {}
+    for floor, call_list in state.down_calls.items():
+        if call_list == []:
+            down_buttons[floor] = False
+        else:
+            down_buttons[floor] = True
+    return curr_pos, buttons_pressed, up_buttons, down_buttons
 
 # def getTotalEventTimes(result_state):
 #     """

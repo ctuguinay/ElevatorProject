@@ -25,6 +25,8 @@ class Elevator(object):
         moving: Boolean that is true if the elevator is moving (between floors), false otherwise.
         letting_people_in: Boolean that is true if the elevator is in the process of letting people in, false otherwise.
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
+        going_up: True if the elevator's doors are open and the elevator intends to go up, False if the doors are
+        open and it intends to go down, None if the doors are not open
     """
 
     current_floor: int
@@ -38,6 +40,7 @@ class Elevator(object):
         """       
         self.moving = False
         self.letting_people_in = False
+        self.going_up = None
 
 
     def add_passenger(self, passenger):
@@ -75,66 +78,3 @@ class Elevator(object):
 
         self.buttons_pressed[button_pressed] = True
         return self.buttons_pressed
-
-
-    # def wait(self, seconds):
-    #     """
-    #     Waits for a period of seconds to simulate an action being carried out.
-    #     """
-
-    #     self.time = self.time + seconds
-
-    # def open_door(self):
-    #     """
-    #     Opens the elevator's door.
-
-    #     Returns:
-    #         time: Time of the elevator in the simulation.
-    #     """
-    #     self.busy = False
-    #     if not self.door_open:
-    #         self.wait(self.wait_time)
-    #         self.door_open = True
-
-    #     return self.time
-
-    # def close_door(self):
-    #     """
-    #     Closes the elevator's door.
-
-    #     Returns:
-    #         time: Time of the elevator in the simulation.
-    #     """
-
-    #     if self.door_open:
-    #         self.wait(self.wait_time)
-    #         self.door_open = False
-
-    #     self.busy = True
-    #     return self.time
-
-    # def go_to_floor(self, target_floor):
-    #     """
-    #     Moves the elevator from its current floor to target_floor and unloads everybody.
-
-    #     Args:
-    #         target_floor: Float representing the floor that the elevator will go to.
-
-    #     Returns:
-    #         elevator_state: Array containing the elevator's time, current location, buttons pressed, and persons that left the elevator at the target floor.
-    #     """
-
-    #     if target_floor > self.top_floor or target_floor < 1:
-    #         raise TypeError("Target floor " + target_floor + " is not in range of floors.")
-
-    #     original_floor = self.current_floor
-    #     time_taken = abs(target_floor - original_floor) * self.wait_time
-    #     self.wait(time_taken)
-    #     self.current_floor = target_floor
-    #     if isinstance(target_floor, int):
-    #         self.buttons_pressed[target_floor] = False
-    #         persons_that_left = {key:val for key, val in self.persons_in_elevator.items() if val[0] == target_floor}
-    #     else:
-    #         persons_that_left = {}
-    #     elevator_state = [self.time, self.current_floor, self.buttons_pressed, persons_that_left]
-    #     return elevator_state

@@ -37,7 +37,6 @@ class State(object):
 
     up_calls: dict
     down_calls: dict
-    current_intended_destination: Union[int, None]
     time: int
     elevator_speed: int
     wait_time: int
