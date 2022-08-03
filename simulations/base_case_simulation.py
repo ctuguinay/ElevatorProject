@@ -1,4 +1,7 @@
-from simulations.classes.EventObjects import Arrival, DoorClose
+try:
+    from simulations.classes.EventObjects import Arrival, DoorClose
+except:
+    from classes.EventObjects import Arrival, DoorClose
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
@@ -98,7 +101,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     # which will sometimes happen on Arrival events
     added_time = 0
 
-    if not timelist.has_next() and current_event.object_type != "Hall Call" and len(current_state.elevator.persons_in_elevator) == 0:
+    if not timelist.has_next() and current_event.object_type != "Hall Call" and current_state.elevator.total_passenger_weight() == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
         # timelist and exit out of the while loop in main
         return timelist, current_state, added_time
@@ -111,22 +114,20 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     
     if current_event.object_type == "Arrival":
         # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false and
-        # computing added_time
         current_state.elevator.moving = False
-        current_state.elevator.current_floor = current_event.floor
-        # added_time = current_event.time - current_event.past.time
+        current_state.elevator.current_floor = current_event.object.floor
     
     elif current_event.object_type == "Hall Call":
         # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
-        for person, destination in persons_dictionary:
-            if destination > current_event.start_floor:
-                up_calls.update(destination, up_calls.get(destination).append(person)) 
-            else: # destination < current_event.start_floor
-                down_calls.update(destination, down_calls.get(destination).append(person))
+        if current_event.object.dest_floor > current_state.elevator.current_floor:
+            current_state.up_calls[current_event.object.start_floor].append(current_event.object)
+        else: # destination < current_event.start_floor
+            current_state.down_calls[current_event.object.start_floor].append(current_event.object)
 
     elif current_event.object_type == "Door Close":
         # TODO: Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
         current_state.elevator.letting_people_in = False
+        current_state.elevator.going_up = None
         
     
 
@@ -147,15 +148,27 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         # update the passenger
         # person.behavior == "Hall Call"
         # Elevator.persons_in_elevator.add(person)
-        
+
+        if current_state.elevator.going_up:
+            #let people who have upcalls into elevator
+            current_state.elevator.add_floor(up_calls)
+        else: # going down
+            current_state.elevator.add_floor(down_calls)
+
         return timelist, current_state, added_time
     
     # ask the model what to do
     curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
     command = model.get_command(curr_pos, buttons_pressed, up_buttons, down_buttons)
 
+    print("------------------------")
+    print(f"buttons_pressed: {buttons_pressed}")
+    print(f"curr_pos: {curr_pos}")
+    print(f"command: {command}")
+    print(current_state.time)
+
     if type(command) is Idle:
-        pass
+        return timelist, current_state, added_time
 
     elif type(command) is Move:
         
@@ -190,38 +203,45 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
             return current_state.elevator_speed
 
         arrival_floor = None
-        if Move.if_up == True:
+        if command.if_up == True:
             arrival_floor = current_state.elevator.current_floor + 1
         else:
             arrival_floor = current_state.elevator.current_floor - 1
         if arrival_floor < 1 or arrival_floor > current_state.elevator.top_floor:
             # If the model gives us invalid instructions, just idle
-            return
+            return timelist, current_state, added_time
         arrival_time = current_state.time + journey_time()
-        timelist.add_event(arrival_time, 'Arrival', Arrival(arrival_floor))
+        new_event = TimeListEvent(arrival_time, 'Arrival', Arrival(arrival_floor))
+        timelist.add_event(new_event)
 
     elif type(command) is OpenCloseDoors:
 
-        removal = []
-        for person, destination in current_state.elevator.persons_in_elevator.values():
-            if destination == current_state.elevator.current_floor:
-                removal.append(person)
-        for person in removal:
-            current_state.elevator.persons_in_elevator.pop(person)
+        removed = []
+        for floor_list in current_state.elevator.persons_in_elevator.values():
+            for person in floor_list:
+                if person.dest_floor == current_state.elevator.current_floor:
+                    removed.append(person)
+        
+        for person in removed:
+            current_state.elevator.persons_in_elevator[person.start_floor].remove(person)
+    
+
+        for person in removed:
+            added_time += current_state.time - person.time
 
         if command.going_up:
             calls = current_state.up_calls
         else:
             calls = current_state.down_calls
-        current_state.elevator.going_up = command.going_up
-        for call in calls[current_state.elevator.current_floor]:
-            current_state.elevator.add_passenger([call.person_id, call.dest_floor])
-        calls[current_state.elevator.current_floor] = []
 
+        current_state.elevator.going_up = command.going_up
+        current_state.elevator.add_floor(calls)
         current_state.elevator.letting_people_in = True
         current_state.elevator.buttons_pressed[current_state.elevator.current_floor] = False
 
-        timelist.add_event(current_state.time + current_state.wait_time, 'Door Close', DoorClose())
+        new_event = TimeListEvent(current_state.time + current_state.wait_time, 'Door Close', DoorClose())
+
+        timelist.add_event(new_event)
 
     else:
         raise ValueError("Return from Model had unexpected type")
@@ -298,15 +318,14 @@ if __name__ == "__main__":
     wait_time = 15
     time = 27000
     elevator_speed = 5
-    persons_dictionary = {}
+    persons_dictionary = {1:[],2:[],3:[],4:[]}
     buttons_pressed = {1:False, 2: False, 3: False, 4: False}
     elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
 
     # Initialize current_state.
     up_calls = {1:[], 2:[], 3:[], 4:[]}
     down_calls = {1:[], 2:[], 3:[], 4:[]}
-    current_intended_destination = None
-    current_state = State(up_calls, down_calls, current_intended_destination, time, elevator_speed, wait_time, elevator)
+    current_state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
     # Repeat until no more events in timelist.
     model = Model()

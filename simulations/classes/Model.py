@@ -65,7 +65,7 @@ class Model:
             else:
                 # no other buttons are pressed, we must decide a new
                 # direction to travel in
-                hall_call_status = self._closest_floor(curr_pos,up_buttons,down_buttons)
+                hall_call_status = self._if_closest_floor_up(curr_pos,up_buttons,down_buttons)
                 if hall_call_status == HallCallStatus.NONE:
                     # no other hall calls made, the direction is arbitrary
                     return OpenCloseDoors(going_up=True)
@@ -77,11 +77,11 @@ class Model:
                 elif hall_call_status == HallCallStatus.CLOSEST_HERE:
                     direction_intention = self._if_hall_call_up(curr_pos,up_buttons,down_buttons)
                     if direction_intention is None:
-                        raise RuntimeError("_closest_floor yields that there are hall calls on this floor,"\
+                        raise RuntimeError("_if_closest_floor_up yields that there are hall calls on this floor,"\
                             +"but _if_hall_call_up yields that there are none")
                     return OpenCloseDoors(direction_intention)
                 else:
-                    raise ValueError("Unexpected return from _closest_floor")
+                    raise ValueError("Unexpected return from _if_closest_floor_up")
         
         if if_relative_buttons_up is not None:
             # this button isn't pressed, but some buttons are. Keep travelling in those buttons' direction
@@ -89,7 +89,7 @@ class Model:
 
 
         # No buttons are pressed at all, no passengers are in the elevator
-        hall_call_status = self._closest_floor(curr_pos,up_buttons,down_buttons)
+        hall_call_status = self._if_closest_floor_up(curr_pos,up_buttons,down_buttons)
         if hall_call_status == HallCallStatus.NONE:
             return Idle() # No passengers, no hall calls
         elif hall_call_status == HallCallStatus.CLOSEST_UP:
@@ -106,7 +106,7 @@ class Model:
             raise ValueError("Unexpected return from _closest_floor")
                 
     
-    def _if_closest_floor_up(curr_pos:int, up_buttons:Dict[int,bool], 
+    def _if_closest_floor_up(self,curr_pos:int, up_buttons:Dict[int,bool], 
         down_buttons:Dict[int,bool]) -> HallCallStatus:
         """
             Args:
@@ -135,7 +135,7 @@ class Model:
             return HallCallStatus.CLOSEST_UP
         return HallCallStatus.CLOSEST_DOWN
     
-    def _if_hall_call_up(curr_pos:int, up_buttons:Dict[int,bool], 
+    def _if_hall_call_up(self,curr_pos:int, up_buttons:Dict[int,bool], 
         down_buttons:Dict[int,bool]):
         """
             Args:
