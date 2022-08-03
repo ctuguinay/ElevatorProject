@@ -1,5 +1,9 @@
 from dataclasses import dataclass
-from simulations.classes.ClassUtilities import validated
+try:
+    from simulations.classes.ClassUtilities import validated
+except:
+    from classes.ClassUtilities import validated
+
 
 
 @validated
@@ -20,8 +24,7 @@ class Elevator(object):
         current_floor: Integer for the floor that the elevator is currently at.
         top_floor: Integer for the top floor that the elevator can visit.
         persons_in_elevator: Dictionary of all people in the elevator 
-        where Keys are a person's ID (strings) and Values is an array with the person's destination floor as the
-        0 index, the time they started waiting as the 1 index, and their weight as the 2 index.
+        where Keys are a person's ID (strings) and Values are HallCalls
         moving: Boolean that is true if the elevator is moving (between floors), false otherwise.
         letting_people_in: Boolean that is true if the elevator is in the process of letting people in, false otherwise.
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
@@ -43,7 +46,7 @@ class Elevator(object):
         self.going_up = None
 
 
-    def add_passenger(self, passenger):
+    def add_floor(self, calls:dict) -> None:
         """
         Adds a passenger to the elevator. We are assuming it takes 0 seconds to load a passenger.
 
@@ -55,12 +58,11 @@ class Elevator(object):
             persons_in_elevator: Dictionary where Keys are a person's ID and Values are a person's.
         """
 
-        person_id = str(passenger[0])
-        person_dest_floor = passenger[1]
-        person_start_wait_time = passenger[2]
-        self.button_pressed(person_dest_floor)
-        self.persons_in_elevator[person_id] = [person_dest_floor, person_start_wait_time]
-        return self.persons_in_elevator
+        self.persons_in_elevator[self.current_floor] += calls[self.current_floor]
+        for person in calls[self.current_floor]:
+            self.button_pressed(person.dest_floor)
+
+        calls[self.current_floor] = []
 
     def button_pressed(self, button_pressed):
         """
@@ -70,7 +72,7 @@ class Elevator(object):
             button_pressed: Integer corresponding to the button that was pressed.
             
         Returns:
-            buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
+            button_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
         """
 
         if button_pressed > self.top_floor or button_pressed < 1:
@@ -78,3 +80,14 @@ class Elevator(object):
 
         self.buttons_pressed[button_pressed] = True
         return self.buttons_pressed
+        
+    def total_passenger_weight(self) -> int:
+        """
+        Returns the total weight of all passengers in the elevator
+        """
+        res = 0
+        for floor_list in self.persons_in_elevator.values():
+            for person in floor_list:
+                res += person.weight
+        
+        return res

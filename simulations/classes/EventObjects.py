@@ -5,7 +5,10 @@ HallCalls are also used as elements of the lists that are the values in up_calls
 """
 
 from typing import Union
-from simulations.classes.ClassUtilities import validated
+try:
+    from simulations.classes.ClassUtilities import validated
+except:
+    from classes.ClassUtilities import validated
 from dataclasses import dataclass
 
 
@@ -39,7 +42,7 @@ class HallCall:
         return f"(person_id:{self.person_id}, start_floor:{self.start_floor}, dest_floor:{self.dest_floor}, weight:{self.weight})"
 
     def __repr__(self):
-        return self.__str__(self)
+        return self.__str__()
 
 
 @validated

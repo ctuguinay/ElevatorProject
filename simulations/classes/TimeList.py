@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Union
-from simulations.classes.ClassUtilities import validated
+try:
+    from simulations.classes.ClassUtilities import validated
+except:
+    from classes.ClassUtilities import validated
 
 @validated
 @dataclass

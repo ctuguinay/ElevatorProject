@@ -4,7 +4,10 @@ A list of commands that a model or algorithm can give to the elevator
 
 from typing import Union
 from dataclasses import dataclass
-from simulations.classes.ClassUtilities import validated
+try:
+    from simulations.classes.ClassUtilities import validated
+except:
+    from classes.ClassUtilities import validated
 
 
 @validated
@@ -26,6 +29,12 @@ class Idle(Command):
     def __init__(self):
         pass
 
+    def __str__(self):
+        return f"Idle: {{}}"
+    
+    def __repr__(self):
+        return self.__str__()
+
 
 class OpenCloseDoors(Command):
     """
@@ -37,6 +46,12 @@ class OpenCloseDoors(Command):
     """
     def __init__(self, going_up):
         self.going_up = going_up
+    
+    def __str__(self):
+        return f"OpenCloseDoors: {{going_up: {self.going_up}}}"
+    
+    def __repr__(self):
+        return self.__str__()
 
 class Move(Command):
     """
@@ -52,3 +67,9 @@ class Move(Command):
         if (type(if_up) is not bool):
             raise TypeError("Argument if_up is not of type bool")
         self.if_up = if_up
+    
+    def __str__(self):
+        return f"Move: {{if_up: {self.if_up}}}"
+    
+    def __repr__(self):
+        return self.__str__()

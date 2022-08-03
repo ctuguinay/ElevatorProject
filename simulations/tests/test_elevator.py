@@ -64,15 +64,15 @@ def create_empty_elevator():
 
     return empty_elevator
 
-def test_add_passenger(create_empty_elevator):
-    """
-    Tests whether the function for adding a passenger works.
-    """
+# def test_add_passenger(create_empty_elevator):
+#     """
+#     Tests whether the function for adding a passenger works.
+#     """
 
-    empty_elevator = create_empty_elevator
+#     empty_elevator = create_empty_elevator
 
-    new_persons_dictionary = empty_elevator.add_passenger(['3', 4, 30000])
+#     new_persons_dictionary = empty_elevator.add_passenger(['3', 4, 30000])
 
-    assert new_persons_dictionary['3'] == [4, 30000]
+#     assert new_persons_dictionary['3'] == [4, 30000]
 
-    assert empty_elevator.buttons_pressed == {1:False, 2: False, 3: False, 4: True}
+#     assert empty_elevator.buttons_pressed == {1:False, 2: False, 3: False, 4: True}

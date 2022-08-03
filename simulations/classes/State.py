@@ -1,10 +1,11 @@
 try:
     from simulations.classes.Elevator import Elevator
+    from simulations.classes.ClassUtilities import validated
 except:
     from classes.Elevator import Elevator
+    from classes.ClassUtilities import validated
 from dataclasses import dataclass
 from typing import Union
-from simulations.classes.ClassUtilities import validated
 
 @validated
 @dataclass
