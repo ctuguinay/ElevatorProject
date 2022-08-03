@@ -106,16 +106,13 @@ def useState(timelist, current_state, current_event, model):
         current_state.elevator.moving = False
         current_state.elevator.current_floor = current_event.floor
         # added_time = current_event.time - current_event.past.time
-        for person in Elevator.persons_in_elevator:
-            if person.value[0] == current_event.floor:
-                added_time += current_event.time - person[2]
     
     elif current_event.object_type == "Hall Call":
         # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
         for person, destination in persons_dictionary:
-            if destination > current_state.elevator.current_floor:
+            if destination > current_event.start_floor:
                 up_calls.update(destination, up_calls.get(destination).append(person)) 
-            else: # destination < current_state.elevator.current_floor
+            else: # destination < current_event.start_floor
                 down_calls.update(destination, down_calls.get(destination).append(person))
 
     elif current_event.object_type == "Door Close":
