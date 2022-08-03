@@ -105,17 +105,29 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     # output (which is the command telling us the next thing to do).
     # For example, we advance the state's time to the time of this event
     current_state.time = current_event.time
+
     
     if current_event.object_type == "Arrival":
         # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false and
         # computing added_time
-        pass
+        current_state.elevator.moving = False
+        current_state.elevator.current_floor = current_event.floor
+        # added_time = current_event.time - current_event.past.time
+    
     elif current_event.object_type == "Hall Call":
         # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
-        pass
+        for person, destination in persons_dictionary:
+            if destination > current_event.start_floor:
+                up_calls.update(destination, up_calls.get(destination).append(person)) 
+            else: # destination < current_event.start_floor
+                down_calls.update(destination, down_calls.get(destination).append(person))
+
     elif current_event.object_type == "Door Close":
         # TODO: Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
-        pass
+        current_state.elevator.letting_people_in = False
+        
+    
+
     else:
         raise ValueError("Next event had unexpected type")
     
@@ -128,6 +140,12 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     if current_state.elevator.letting_people_in:
         # TODO: If anyone's on this floor, change state to reflect letting them in to this elevator. We
         # again can't change our behavior, so no need to call the Model, just return with the state we've changed.
+        current_state.elevator.moving = False
+
+        # update the passenger
+        # person.behavior == "Hall Call"
+        # Elevator.persons_in_elevator.add(person)
+        
         return timelist, current_state, added_time
     
     # ask the model what to do
