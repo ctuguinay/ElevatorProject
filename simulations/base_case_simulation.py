@@ -7,7 +7,6 @@ from classes.Model import Model
 from classes.Commands import Idle, OpenCloseDoors, Move
 from classes.Log import Log, LogPIT
 
-
 from math import log1p, e
 import csv
 import os
@@ -151,9 +150,10 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
 
         if current_state.elevator.going_up:
             #let people who have upcalls into elevator
-            current_state.elevator.add_floor(up_calls)
+            current_state.elevator.add_floor(current_state.up_calls)
         else: # going down
-            current_state.elevator.add_floor(down_calls)
+            #let people who have downcalls into elevator
+            current_state.elevator.add_floor(current_state.down_calls)
 
         return timelist, current_state, added_time
     
@@ -297,7 +297,7 @@ def state_to_elevator_input(state:State) -> Tuple[int,
 
 #     return total_event_times
 
-if __name__ == "__main__":
+def initialize_values():
 
     # Initialize Total Time for all passengers that takes into account wait time and travel time.
     total_time = 0
@@ -333,8 +333,18 @@ if __name__ == "__main__":
     start_log_pit = LogPIT(current_state, timelist, [], [])
     log.add_log_pit(start_log_pit)
 
-    # Repeat until no more events in timelist.
+    # Initialize Model
     model = Model()
+
+    return total_time, timelist, elevator, current_state, log, model
+
+
+if __name__ == "__main__":
+
+    # Get initial values.
+    total_time, timelist, elevator, current_state, log, model = initialize_values()
+
+    # Repeat until no more events in timelist.
     while timelist.has_next():
         current_event = timelist.next_event()
         timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
