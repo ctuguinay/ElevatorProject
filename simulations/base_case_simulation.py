@@ -1,13 +1,11 @@
-try:
-    from simulations.classes.EventObjects import Arrival, DoorClose
-except:
-    from classes.EventObjects import Arrival, DoorClose
+from classes.EventObjects import Arrival, DoorClose
 from classes.Elevator import Elevator
 from classes.State import State
 from classes.TimeList import TimeList, TimeListEvent
 from classes.EventObjects import HallCall
 from classes.Model import Model
 from classes.Commands import Idle, OpenCloseDoors, Move
+from classes.Log import Log, LogPIT
 
 
 from math import log1p, e
@@ -163,11 +161,11 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
     command = model.get_command(curr_pos, buttons_pressed, up_buttons, down_buttons)
 
-    print("------------------------")
-    print(f"buttons_pressed: {buttons_pressed}")
-    print(f"curr_pos: {curr_pos}")
-    print(f"command: {command}")
-    print(current_state.time)
+    #print("------------------------")
+    #print(f"buttons_pressed: {buttons_pressed}")
+    #print(f"curr_pos: {curr_pos}")
+    #print(f"command: {command}")
+    #print(current_state.time)
 
     if type(command) is Idle:
         return timelist, current_state, added_time
@@ -330,12 +328,20 @@ if __name__ == "__main__":
     down_calls = {floor: [] for floor in floors}
     current_state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
+    # Initialize Log object and the first LogPIT object and place the LogPIT object into the Log object..
+    log = Log()
+    start_log_pit = LogPIT(current_state, timelist, [], [])
+    log.add_log_pit(start_log_pit)
+
     # Repeat until no more events in timelist.
     model = Model()
     while timelist.has_next():
         current_event = timelist.next_event()
         timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
         total_time = total_time + added_time
+        # Uncomment these after Jeffrey's work gets merged.
+        # current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
+        # log.add_log_pit(current_log_pit)
         current_state = result_state
 
     # Prints out the total time.
