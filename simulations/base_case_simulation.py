@@ -15,9 +15,11 @@ import csv
 import os
 from typing import Tuple, Dict
 
-BOTTOM_FLOOR = 1
-HEIGHT = {1: 0, 2: None, 3: None, 4: None} # A height dict mapping each floor to its height above the ground floor
-    # to compute the amount of time it takes to traverse a floor.
+
+HEIGHT = {1: 0, 2: 4.5, 3: 9, 4: 13.5} # A height dict mapping each floor to its height above the ground floor
+    # to compute the amount of time it takes to traverse a floor. (Assumes, as is given to us by Google, that
+    # the average floor-to-floor height is 4.65 (here glossed as 4.5) m in an office building). Theoretically,
+    # this can be altered to create variable distances in the case of a specific building.
 
 
 def loadTimeList(reader, timelist):
@@ -313,18 +315,19 @@ if __name__ == "__main__":
         timelist= loadTimeList(reader,timelist)
 
     # Initialize Elevator.
-    start_floor = 1
-    top_floor = 4
+    floors = list(HEIGHT.keys())
+    start_floor = floors[0]
+    top_floor = floors[-1]
     wait_time = 15
     time = 27000
     elevator_speed = 5
-    persons_dictionary = {1:[],2:[],3:[],4:[]}
-    buttons_pressed = {1:False, 2: False, 3: False, 4: False}
+    persons_dictionary = {floor: [] for floor in floors}
+    buttons_pressed = {floor: False for floor in floors}
     elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
 
     # Initialize current_state.
-    up_calls = {1:[], 2:[], 3:[], 4:[]}
-    down_calls = {1:[], 2:[], 3:[], 4:[]}
+    up_calls = {floor: [] for floor in floors}
+    down_calls = {floor: [] for floor in floors}
     current_state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
     # Repeat until no more events in timelist.
