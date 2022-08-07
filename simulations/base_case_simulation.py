@@ -1,11 +1,21 @@
-from classes.EventObjects import Arrival, DoorClose
-from classes.Elevator import Elevator
-from classes.State import State
-from classes.TimeList import TimeList, TimeListEvent
-from classes.EventObjects import HallCall
-from classes.Model import Model
-from classes.Commands import Idle, OpenCloseDoors, Move
-from classes.Log import Log, LogPIT
+try:
+    from simulations.classes.EventObjects import Arrival, DoorClose
+    from simulations.classes.Elevator import Elevator
+    from simulations.classes.State import State
+    from simulations.classes.TimeList import TimeList, TimeListEvent
+    from simulations.classes.EventObjects import HallCall
+    from simulations.classes.Model import Model
+    from simulations.classes.Commands import Idle, OpenCloseDoors, Move
+    from simulations.classes.Log import Log, LogPIT
+except:
+    from classes.EventObjects import Arrival, DoorClose
+    from classes.Elevator import Elevator
+    from classes.State import State
+    from classes.TimeList import TimeList, TimeListEvent
+    from classes.EventObjects import HallCall
+    from classes.Model import Model
+    from classes.Commands import Idle, OpenCloseDoors, Move
+    from classes.Log import Log, LogPIT
 
 from math import log1p, e
 import csv

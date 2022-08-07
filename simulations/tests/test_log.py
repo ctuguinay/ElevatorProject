@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 import pytest
 from simulations.classes.Log import Log, LogPIT
 from simulations.classes.TimeList import TimeList, TimeListEvent
