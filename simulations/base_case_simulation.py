@@ -108,7 +108,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     # across all hall calls) whenever people get to their destination. added_time will be the amount by 
     # which we increment the total time waited by as a result of people getting to their destination during this event,
     # which will sometimes happen on Arrival events
-    added_time = 0
+    added_time = []
 
     if not timelist.has_next() and current_event.object_type != "Hall Call" and current_state.elevator.total_passenger_weight() == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
@@ -237,7 +237,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     
 
         for person in removed:
-            added_time += current_state.time - person.time
+            #added_time += current_state.time - person.time
+            added_time.append(current_state.time - person.time)
 
         if command.going_up:
             calls = current_state.up_calls
@@ -310,7 +311,7 @@ def state_to_elevator_input(state:State) -> Tuple[int,
 def initialize_values():
 
     # Initialize Total Time for all passengers that takes into account wait time and travel time.
-    total_time = 0
+    total_time = []
 
     # Get csv path.
     script_dir = os.path.dirname(__file__)
