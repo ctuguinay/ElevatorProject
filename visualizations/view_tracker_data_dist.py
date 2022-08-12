@@ -71,14 +71,14 @@ if __name__ == "__main__":
 
     # Title mean times graph.
     axis[0,0].set_title("Mean Times Plot")
-    axis[0,0].set(xlabel='Number of Samples', ylabel='Time in Seconds')
+    axis[0,0].set(ylabel='Time in Seconds')
 
     # Create median times graph.
-    axis[0,1].plot(number_samples, mean_times)
+    axis[0,1].plot(number_samples, median_times)
 
     # Title median times graph.
     axis[0,1].set_title("Median Times Plot")
-    axis[0,1].set(xlabel='Number of Samples', ylabel='Time in Seconds')
+    axis[0,1].set(ylabel='Time in Seconds')
 
     # Create max times graph.
     axis[1,0].plot(number_samples, max_times)
@@ -93,10 +93,6 @@ if __name__ == "__main__":
     # Title sum times graph.
     axis[1,1].set_title("Sum Times Plot")
     axis[1,1].set(xlabel='Number of Samples', ylabel='Time in Seconds')
-
-    # Hide x labels for top plots.
-    for ax in axis.flat:
-        ax.label_outer()
 
     # Show plot
     plt.show()
