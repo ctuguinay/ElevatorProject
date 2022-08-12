@@ -20,6 +20,8 @@ except:
 from math import log1p, e
 import csv
 import os
+import random
+from statistics import mean, median
 from typing import Tuple, Dict
 
 
@@ -108,7 +110,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     # across all hall calls) whenever people get to their destination. added_time will be the amount by 
     # which we increment the total time waited by as a result of people getting to their destination during this event,
     # which will sometimes happen on Arrival events
-    added_time = 0
+    added_time = []
 
     if not timelist.has_next() and current_event.object_type != "Hall Call" and current_state.elevator.total_passenger_weight() == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
@@ -237,7 +239,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     
 
         for person in removed:
-            added_time += current_state.time - person.time
+            #added_time += current_state.time - person.time
+            added_time.append(current_state.time - person.time)
 
         if command.going_up:
             calls = current_state.up_calls
@@ -307,20 +310,31 @@ def state_to_elevator_input(state:State) -> Tuple[int,
 
 #     return total_event_times
 
-def initialize_values():
+def initialize_values(full_timelist, number_samples):
+    """
+    Initializes values for the base case simulation.
+
+    Args:
+        number_samples: Integer for max number of samples.
+        full_timelist: Timelist object with all the hall calls.
+
+    Returns:
+        total_time: Array that is the initialized total wait time of all people that left the elevator here.
+        timelist: Timelist object that has been initialized with a sample of hall calls.
+        current_state: State object that has been modified to take into account the most recent event in the simulation.
+        elevator: Elevator object that has been properly initialized.
+        log: Log object to track every part of the simulation.
+        model: Initialized base case model.
+    """
 
     # Initialize Total Time for all passengers that takes into account wait time and travel time.
-    total_time = 0
+    total_time = []
 
-    # Get csv path.
-    script_dir = os.path.dirname(__file__)
-    full_path = os.path.join(script_dir, "data/CSVs/data_example.csv").replace("simulations\\", "")
-
-    # Initiliaze Timelist with reader.
+    # Sample from full timelist.
+    full_timelist_future = full_timelist.future
+    future_samples = random.sample(full_timelist_future, number_samples)
     timelist = TimeList()
-    with open(full_path, mode='r', newline='') as file:
-        reader = csv.reader(file, delimiter=',', quotechar='"')
-        timelist= loadTimeList(reader,timelist)
+    timelist.future = future_samples
 
     # Initialize Elevator.
     floors = list(HEIGHT.keys())
@@ -351,18 +365,66 @@ def initialize_values():
 
 if __name__ == "__main__":
 
-    # Get initial values.
-    total_time, timelist, elevator, current_state, log, model = initialize_values()
+    # Initialize CSV Tracker.
+    first_row = ["number_samples", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
+    tracker = [first_row]
 
-    # Repeat until no more events in timelist.
-    while timelist.has_next():
-        current_event = timelist.next_event()
-        timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
-        total_time = total_time + added_time
-        # Uncomment these after Jeffrey's work gets merged.
-        # current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
-        # log.add_log_pit(current_log_pit)
-        current_state = result_state
+    # Get csv path.
+    script_dir = os.path.dirname(__file__)
+    full_path = os.path.join(script_dir, "data/CSVs/data.csv").replace("simulations\\", "")
 
-    # Prints out the total time.
-    print(total_time)
+    # Initiliaze Full Timelist with reader.
+    full_timelist = TimeList()
+    with open(full_path, mode='r', newline='') as file:
+        reader = csv.reader(file, delimiter=',', quotechar='"')
+        full_timelist = loadTimeList(reader,full_timelist)
+
+    # Iterate through number of Hall Call samples.
+    for number_samples_pre in range(20):
+        number_samples = (number_samples_pre + 1) * 200
+
+        # Get initial values.
+        total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, number_samples)
+
+        # Repeat until no more events in timelist.
+        while timelist.has_next():
+            current_event = timelist.next_event()
+            timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
+            total_time = total_time + added_time
+            current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
+            log.add_log_pit(current_log_pit)
+            current_state = result_state
+
+        # Prints out the length of total_time
+        length_total_time = len(total_time)
+        #print(length_total_time)
+
+        # Prints out mean of total_time
+        mean_total_time = mean(total_time)
+        #print(mean_total_time)
+
+        # Prints out median of total_time
+        median_total_time = median(total_time)
+        #print(median_total_time)
+
+        # Prints out max of total_time
+        max_total_time = max(total_time)
+        #print(max_total_time)
+
+        # Prints out sum of total_time.
+        sum_total_time = length_total_time * mean_total_time
+        #print(sum_total_time)
+
+        row = [number_samples, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time]
+        tracker.append(row)
+
+    # Open the CSV file that we will be writing to.
+    csv_name = "tracker.csv"
+    with open("CSVs/" + csv_name, mode='w+', newline='') as file:
+
+        # Define the CSV writer.
+        writer = csv.writer(file, delimiter=',', quotechar='"')
+
+        # Iterate through tracker list.
+        for row in tracker:
+            writer.writerow(row)
