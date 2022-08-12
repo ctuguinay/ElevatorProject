@@ -22,7 +22,7 @@ def argparse_create(args):
 
     parser.add_argument("--set_persons", type=int,
                     help="Sets how many people there will be in the generated dataset.",
-                    default=10000)
+                    default=1000)
 
     parser.add_argument("--set_target_file", type=str,
                 help="The csv file where data will be sent to. Make sure to include a .csv at the end of the target file's name.",
@@ -30,7 +30,7 @@ def argparse_create(args):
 
     parser.add_argument("--set_floors", type=int,
                         help="Sets how many floors there will be in the generated dataset.",
-                        default=8)
+                        default=4)
 
     parser.add_argument("--set_no_stop_prob", type=float,
                     help="Probability of having no non-standard hall-calls",
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         raise ValueError("Invalid target file format. Must have a .csv at the end of the file name.")
 
     # Open the CSV file that we will be writing to.
-    with open("data/CSVs/" + target_file, mode='w+', newline='') as file:
+    with open("CSVs/" + target_file, mode='w+', newline='') as file:
 
         # Define the CSV writer.
         writer = csv.writer(file, delimiter=',', quotechar='"')
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     sortedRows = []
 
     # Open the CSV file that we will be reading.
-    with open("data/CSVs/" + target_file, mode='r', newline='') as file:
+    with open("CSVs/" + target_file, mode='r', newline='') as file:
 
         # Define the CSV writer.
         reader = csv.reader(file, delimiter=',', quotechar='"')
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     
     # Open the CSV file that we will be writing to.
-    with open("data/CSVs/" + target_file, mode='w', newline='') as file:
+    with open("CSVs/" + target_file, mode='w', newline='') as file:
 
         # Define the CSV writer.
         writer = csv.writer(file, delimiter=',', quotechar='"')
