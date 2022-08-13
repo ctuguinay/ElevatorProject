@@ -1,4 +1,7 @@
-from classes.Commands import Idle, OpenCloseDoors, Move, Command
+try:
+    from simulations.classes.Commands import Idle, OpenCloseDoors, Move, Command
+except:
+    from classes.Commands import Idle, OpenCloseDoors, Move, Command
 import numpy as np
 from typing import Dict
 from enum import Enum
