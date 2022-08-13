@@ -333,6 +333,7 @@ def initialize_values(full_timelist, number_samples):
     # Sample from full timelist.
     full_timelist_future = full_timelist.future
     future_samples = random.sample(full_timelist_future, number_samples)
+    future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
     timelist = TimeList()
     timelist.future = future_samples
 
