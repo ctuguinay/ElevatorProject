@@ -5,11 +5,11 @@ from simulations.classes.Log import Log, LogPIT
 from simulations.classes.TimeList import TimeList, TimeListEvent
 from simulations.classes.State import State
 from simulations.classes.Elevator import Elevator
-from simulations.base_case_simulation import loadTimeList, initialize_values, state_to_elevator_input
+from simulations.base_case_simulation import load_timelist, initialize_values, state_to_elevator_input
 
 def test_load_timelist():
     """
-    Tests if loadTimeList works.
+    Tests if load_timelist works.
     """
 
     # Get csv path.
@@ -20,7 +20,7 @@ def test_load_timelist():
     timelist = TimeList()
     with open(full_path, mode='r', newline='') as file:
         reader = csv.reader(file, delimiter=',', quotechar='"')
-        timelist = loadTimeList(reader,timelist)
+        timelist = load_timelist(reader,timelist)
 
     current_event = timelist.next_event()
 

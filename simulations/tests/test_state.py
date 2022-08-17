@@ -12,9 +12,10 @@ def test_bad_initialization_state():
         #Initialize elevator.
         start_floor = 1
         top_floor = 4
+        capacity = 1500.0
         persons_dictionary = {}
         buttons_pressed = {1:False, 2: False, 3: False, 4: False}
-        elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+        elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
         # Initialize current_state.
         up_calls = {1:[], 2:[], 3:[], 4:[]}
@@ -29,9 +30,10 @@ def test_bad_initialization_state():
         # Initialize elevator.
         start_floor = 1
         top_floor = 4
+        capacity = 1500.0
         persons_dictionary = {}
         buttons_pressed = {1:False, 2: False, 3: False, 4: False}
-        elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+        elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
         # Initialize current_state.
         up_calls = {1:[], 2:[], 3:[], 4:[]}
@@ -62,9 +64,10 @@ def test_good_intialization():
     # Initialize an elevator.
     start_floor = 1
     top_floor = 4
+    capacity = 1500.0
     persons_dictionary = {}
     buttons_pressed = {1:False, 2: False, 3: False, 4: False}
-    elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+    elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
     # Initialize current_state.
     up_calls = {1:[], 2:[], 3:[], 4:[]}
