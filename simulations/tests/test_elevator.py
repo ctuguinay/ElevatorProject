@@ -10,24 +10,27 @@ def test_bad_initialization_elevator():
         start_floor = 1.3434545
         top_floor = 4
         elevator_speed = 5
+        capacity = 1500.0
         persons_dictionary = {}
         buttons_pressed = {1: False, 2: False, 3: False, 4: False}
-        elevator = Elevator(start_floor, top_floor, elevator_speed, persons_dictionary, buttons_pressed)
+        elevator = Elevator(start_floor, top_floor, capacity, elevator_speed, persons_dictionary, buttons_pressed)
 
     with pytest.raises(TypeError):
         start_floor = 1
         top_floor = 4
         elevator_speed = 5
+        capacity = 1500.0
         persons_dictionary = {}
         buttons_pressed = {1: False, 2: False, 3: False, 4: False}
-        elevator = Elevator(start_floor, top_floor, elevator_speed, persons_dictionary, buttons_pressed)
+        elevator = Elevator(start_floor, top_floor, capacity, elevator_speed, persons_dictionary, buttons_pressed)
 
     with pytest.raises(TypeError):
         start_floor = 1.343435345
         top_floor = 4
         persons_dictionary = 1
+        capacity=1500.0
         buttons_pressed = {1: False, 2: False, 3: False, 4: False}
-        elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+        elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
 def test_good_initialization_elevator():
     """
@@ -37,8 +40,9 @@ def test_good_initialization_elevator():
     start_floor = 1
     top_floor = 4
     persons_dictionary = {}
+    capacity=1500.0
     buttons_pressed = {1: False, 2: False, 3: False, 4: False}
-    elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+    elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
     assert elevator.current_floor == 1
     assert elevator.top_floor == 4
@@ -60,7 +64,8 @@ def create_empty_elevator():
     top_floor = 4
     persons_dictionary = {}
     buttons_pressed = {1: False, 2: False, 3: False, 4: False}
-    empty_elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+    capacity = 1500.0
+    empty_elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
     return empty_elevator
 

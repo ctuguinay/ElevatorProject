@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 from numpy import genfromtxt
 from matplotlib import pyplot as plt
+import sys
 
 if __name__ == "__main__":
 
@@ -40,14 +41,17 @@ if __name__ == "__main__":
         cur_path = os.path.dirname(__file__)
 
         # Get absolute path to the data.csv file.
-        data_path = os.path.relpath('..\\simulations\\CSVs\\' + target_file, cur_path)
+        data_path = os.path.join(sys.path[0], '..', 'simulations', 'CSVs',target_file)
+
+
         
         # Put data.csv into numpy array.
         data_np = genfromtxt(data_path, delimiter=',')
 
     except:
-
         raise ValueError("No such target directory exists.")
+    
+    # print(data_np)
 
     # Delete header row.
     data_np = np.delete(data_np, (0), axis=0)

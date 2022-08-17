@@ -25,6 +25,8 @@ class Elevator(object):
         top_floor: Integer for the top floor that the elevator can visit.
         persons_in_elevator: Dictionary of all people in the elevator 
         where Keys are a person's ID (strings) and Values are HallCalls
+        capacity: The elevator's weight capacity
+        curr_weight: The elevator's current weight
         moving: Boolean that is true if the elevator is moving (between floors), false otherwise.
         letting_people_in: Boolean that is true if the elevator is in the process of letting people in, false otherwise.
         buttons_pressed: Dictionary where Keys are the number of floor and Values are the boolean for whether that floor has been pressed or not.
@@ -34,6 +36,7 @@ class Elevator(object):
 
     current_floor: int
     top_floor: int
+    capacity: float
     persons_in_elevator: dict
     buttons_pressed: dict
 
@@ -44,25 +47,32 @@ class Elevator(object):
         self.moving = False
         self.letting_people_in = False
         self.going_up = None
+        self.curr_weight = 0
 
 
     def add_floor(self, calls:dict) -> None:
         """
-        Adds a passenger to the elevator. We are assuming it takes 0 seconds to load a passenger.
+        Adds the current floor of passengers to the elevator (in either the up or down direction). 
+        We are assuming it takes 0 seconds to load a passenger.
 
         Args: 
-            passenger: Array where the 0 index is the ID of the passenger, the 1 index is the destination 
-            floor of the passenger, and the 2 index is the time that the passenger started waiting at their start floor.
+            calls: either the up or down calls array, depending on which array of people are being added
 
         Returns:
-            persons_in_elevator: Dictionary where Keys are a person's ID and Values are a person's.
+            persons_in_elevator: Dictionary where Keys are a person's ID and Values are Hall Calls.
         """
 
-        self.persons_in_elevator[self.current_floor] += calls[self.current_floor]
-        for person in calls[self.current_floor]:
-            self.button_pressed(person.dest_floor)
+        waiting = calls[self.current_floor]
 
-        calls[self.current_floor] = []
+        for person in waiting:
+            if self.curr_weight + person.weight < self.capacity:
+                self.persons_in_elevator[self.current_floor].append(person)
+                calls[self.current_floor].remove(person)
+                self.button_pressed(person.dest_floor)
+                self.curr_weight += person.weight
+            else:
+                # no more room
+                break
 
     def button_pressed(self, button_pressed):
         """

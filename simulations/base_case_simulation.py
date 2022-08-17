@@ -23,6 +23,10 @@ import os
 import random
 from statistics import mean, median
 from typing import Tuple, Dict
+import subprocess
+import numpy as np
+import sys
+from tqdm import tqdm
 
 
 HEIGHT = {1: 0, 2: 4.5, 3: 9, 4: 13.5} # A height dict mapping each floor to its height above the ground floor
@@ -30,8 +34,11 @@ HEIGHT = {1: 0, 2: 4.5, 3: 9, 4: 13.5} # A height dict mapping each floor to its
     # the average floor-to-floor height is 4.65 (here glossed as 4.5) m in an office building). Theoretically,
     # this can be altered to create variable distances in the case of a specific building.
 
+# Number of times the simulation is run for each number of people
+RUNS = 50
 
-def loadTimeList(reader, timelist):
+
+def load_timelist(reader, timelist):
     """
     Loads the timelist object with timelist events that are made from the rows in reader.
 
@@ -170,8 +177,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         return timelist, current_state, added_time
     
     # ask the model what to do
-    curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
-    command = model.get_command(curr_pos, buttons_pressed, up_buttons, down_buttons)
+    capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
+    command = model.get_command(capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons)
 
     #print("------------------------")
     #print(f"buttons_pressed: {buttons_pressed}")
@@ -236,6 +243,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         
         for person in removed:
             current_state.elevator.persons_in_elevator[person.start_floor].remove(person)
+            current_state.elevator.curr_weight -= person.weight
     
 
         for person in removed:
@@ -261,7 +269,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
 
     return timelist, current_state, added_time
 
-def state_to_elevator_input(state:State) -> Tuple[int,
+def state_to_elevator_input(state:State) -> Tuple[float, float, int,
         Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
     """
     Arguments:
@@ -287,7 +295,8 @@ def state_to_elevator_input(state:State) -> Tuple[int,
             down_buttons[floor] = False
         else:
             down_buttons[floor] = True
-    return curr_pos, buttons_pressed, up_buttons, down_buttons
+    return state.elevator.capacity, state.elevator.curr_weight, \
+        curr_pos, buttons_pressed, up_buttons, down_buttons
 
 # def getTotalEventTimes(result_state):
 #     """
@@ -315,7 +324,7 @@ def initialize_values(full_timelist, number_samples):
     Initializes values for the base case simulation.
 
     Args:
-        number_samples: Integer for max number of samples.
+        number_samples: Integer for max number of samples. If -1, gives all samples.
         full_timelist: Timelist object with all the hall calls.
 
     Returns:
@@ -331,22 +340,26 @@ def initialize_values(full_timelist, number_samples):
     total_time = []
 
     # Sample from full timelist.
-    full_timelist_future = full_timelist.future
-    future_samples = random.sample(full_timelist_future, number_samples)
-    future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
-    timelist = TimeList()
-    timelist.future = future_samples
+    if number_samples != -1:
+        full_timelist_future = full_timelist.future
+        future_samples = random.sample(full_timelist_future, number_samples)
+        future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
+        timelist = TimeList()
+        timelist.future = future_samples
+    else:
+        timelist = full_timelist
 
     # Initialize Elevator.
     floors = list(HEIGHT.keys())
     start_floor = floors[0]
     top_floor = floors[-1]
+    capacity = 1500.0
     wait_time = 15
     time = 27000
     elevator_speed = 5
     persons_dictionary = {floor: [] for floor in floors}
     buttons_pressed = {floor: False for floor in floors}
-    elevator = Elevator(start_floor, top_floor, persons_dictionary, buttons_pressed)
+    elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
     # Initialize current_state.
     up_calls = {floor: [] for floor in floors}
@@ -363,8 +376,23 @@ def initialize_values(full_timelist, number_samples):
 
     return total_time, timelist, elevator, current_state, log, model
 
+def add_to_timelist(timelist, filepath):
+    try:
+        timelist = TimeList()
+        with open(filepath, mode='r', newline='') as file:
+            reader = csv.reader(file, delimiter=',', quotechar='"')
+            timelist = load_timelist(reader,timelist)
+    except PermissionError:
+        # retry
+        print("Permission Error excepted")
+        return add_to_timelist(timelist, filepath)
+    
+    return timelist
+
 
 if __name__ == "__main__":
+
+    generation_script = "ElevatorProject/data/create_csv.py"
 
     # Initialize CSV Tracker.
     first_row = ["number_samples", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
@@ -372,56 +400,81 @@ if __name__ == "__main__":
 
     # Get csv path.
     script_dir = os.path.dirname(__file__)
-    full_path = os.path.join(script_dir, "data/CSVs/data.csv").replace("simulations\\", "")
-
-    # Initiliaze Full Timelist with reader.
-    full_timelist = TimeList()
-    with open(full_path, mode='r', newline='') as file:
-        reader = csv.reader(file, delimiter=',', quotechar='"')
-        full_timelist = loadTimeList(reader,full_timelist)
+    full_path = os.path.join(script_dir, "data", "CSVs", "data.csv").replace("simulations\\", "")
 
     # Iterate through number of Hall Call samples.
-    for number_samples_pre in range(20):
-        number_samples = (number_samples_pre + 1) * 200
+    for number_people_pre in range(20):
+        number_people = (number_people_pre + 1) * 40
 
-        # Get initial values.
-        total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, number_samples)
+        full_run_result = np.zeros(6)
 
-        # Repeat until no more events in timelist.
-        while timelist.has_next():
-            current_event = timelist.next_event()
-            timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
-            total_time = total_time + added_time
-            current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
-            log.add_log_pit(current_log_pit)
-            current_state = result_state
+        for run in tqdm(range(RUNS)):
 
-        # Prints out the length of total_time
-        length_total_time = len(total_time)
-        #print(length_total_time)
+            subprocess.run(["python3", generation_script,f"--set_persons={number_people}"])
 
-        # Prints out mean of total_time
-        mean_total_time = mean(total_time)
-        #print(mean_total_time)
+            # Initiliaze Full Timelist with reader.
+            full_timelist = TimeList()
+            full_timelist = add_to_timelist(full_timelist, full_path)
 
-        # Prints out median of total_time
-        median_total_time = median(total_time)
-        #print(median_total_time)
+            # Get initial values.
+            total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, -1)
 
-        # Prints out max of total_time
-        max_total_time = max(total_time)
-        #print(max_total_time)
+            # Repeat until no more events in timelist.
+            count=0
+            while timelist.has_next():
+                count += 1
+                current_event = timelist.next_event()
+                timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
 
-        # Prints out sum of total_time.
-        sum_total_time = length_total_time * mean_total_time
-        #print(sum_total_time)
+                weight = 0
+                for floor in result_state.elevator.persons_in_elevator:
+                    for person in result_state.elevator.persons_in_elevator[floor]:
+                        weight += person.weight
 
-        row = [number_samples, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time]
-        tracker.append(row)
+                total_time = total_time + added_time
+                current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
+                log.add_log_pit(current_log_pit)
+                current_state = result_state
+                if count > 10000:
+                    print("----------------------------------------")
+                    print(current_state.elevator.persons_in_elevator)
+                    print(current_state.elevator.current_floor)
+                    print(current_state.up_calls)
+                    print(current_state.down_calls)
+                    print(current_state.elevator.curr_weight)
+                    print(current_event)
+
+            # Prints out the length of total_time
+            length_total_time = len(total_time)
+            #print(length_total_time)
+
+            # Prints out mean of total_time
+            mean_total_time = mean(total_time)
+            #print(mean_total_time)
+
+            # Prints out median of total_time
+            median_total_time = median(total_time)
+            #print(median_total_time)
+
+            # Prints out max of total_time
+            max_total_time = max(total_time)
+            #print(max_total_time)
+
+            # Prints out sum of total_time.
+            sum_total_time = length_total_time * mean_total_time
+            #print(sum_total_time)
+
+            row = np.array([number_people, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time])
+            full_run_result += row
+        
+        full_run_result /= RUNS
+        print(full_run_result)
+        
+        tracker.append(full_run_result.tolist())
 
     # Open the CSV file that we will be writing to.
     csv_name = "tracker.csv"
-    with open("CSVs/" + csv_name, mode='w+', newline='') as file:
+    with open(os.path.join(sys.path[0], "CSVs", "tracker.csv"), mode='w+', newline='') as file:
 
         # Define the CSV writer.
         writer = csv.writer(file, delimiter=',', quotechar='"')
