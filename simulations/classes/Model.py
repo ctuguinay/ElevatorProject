@@ -30,12 +30,15 @@ class Model:
         more passengers in. This process will eventually end when the elevator is empty, in which case
         the elevator will again either Idle or search for one of the closest floors to again start
         transporting passengers.
+    Attributes:
+        tried_opening: if we tried opening the doors on this floor to let passengers in already or not
     """
 
     def __init__(self):
+        self.tried_opening = False
         pass
 
-    def get_command(self, curr_pos:int, buttons_pressed:Dict[int,bool], 
+    def get_command(self, total_cap:float, curr_weight:float, curr_pos:int, buttons_pressed:Dict[int,bool], 
         up_buttons:Dict[int,bool], down_buttons:Dict[int,bool]) -> Command:
         """
         A command that will tell us the next thing to do, given information that
@@ -43,6 +46,8 @@ class Model:
         the current position, a list of buttons pressed within the elevator, the floor with hall
         calls going up, and the floor with hall calls going down)
         Args:
+            total_cap: the full capacity of the elevator
+            curr_weight: the current weight of all the people in the elevator
             curr_pos: current position of the elevator
             buttons_pressed: map from floor number to if the button for that floor in the elevator
                 has been pressed or not
@@ -51,8 +56,8 @@ class Model:
         """
         if_relative_buttons_up = None
         for floor,pressed in buttons_pressed.items():
-            # all buttons pressed other than the current floor should be above
-            # or below the current level
+            # buttons pressed other than the current floor should be all above
+            # or all below the current level
             if floor != curr_pos and pressed:
                 if floor < curr_pos:
                     if_relative_buttons_up = False
@@ -87,7 +92,19 @@ class Model:
                     raise ValueError("Unexpected return from _if_closest_floor_up")
         
         if if_relative_buttons_up is not None:
-            # this button isn't pressed, but some buttons are. Keep travelling in those buttons' direction
+            # this button isn't pressed, but some buttons are.
+            if if_relative_buttons_up:
+                hc_buttons = up_buttons
+            else:
+                hc_buttons = down_buttons
+            if hc_buttons[curr_pos] and curr_weight + 108 < total_cap and not self.tried_opening:
+                # people want to come in the same direction and there's space, open the
+                # doors for them
+                self.tried_opening = True # only try once
+                return OpenCloseDoors(if_relative_buttons_up)
+
+            self.tried_opening = False
+            # nobody wants to come in the same direction, keep going
             return Move(if_up=if_relative_buttons_up)
 
 
