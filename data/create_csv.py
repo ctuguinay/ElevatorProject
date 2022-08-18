@@ -31,7 +31,7 @@ def argparse_create(args):
 
     parser.add_argument("--set_floors", type=int,
                         help="Sets how many floors there will be in the generated dataset.",
-                        default=4)
+                        default=8)
 
     parser.add_argument("--set_no_stop_prob", type=float,
                     help="Probability of having no non-standard hall-calls",
