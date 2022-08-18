@@ -27,9 +27,10 @@ import subprocess
 import numpy as np
 import sys
 from tqdm import tqdm
+import argparse
 
-
-HEIGHT = {1: 0, 2: 4.5, 3: 9, 4: 13.5} # A height dict mapping each floor to its height above the ground floor
+NUM_FLOORS = 8
+HEIGHT = {value:key for value in range(1, NUM_FLOORS + 1) for key in [(value - 1) * 4.5]} # A height dict mapping each floor to its height above the ground floor
     # to compute the amount of time it takes to traverse a floor. (Assumes, as is given to us by Google, that
     # the average floor-to-floor height is 4.65 (here glossed as 4.5) m in an office building). Theoretically,
     # this can be altered to create variable distances in the case of a specific building.
@@ -37,6 +38,27 @@ HEIGHT = {1: 0, 2: 4.5, 3: 9, 4: 13.5} # A height dict mapping each floor to its
 # Number of times the simulation is run for each number of people
 RUNS = 50
 
+def argparse_create(args):
+    """
+    Parser to parse this script's arguments that pertain to our simulation.
+
+    Args:
+        args: User inputted arguments that have yet to be parsed.
+
+    Returns:
+        parsed_args: Parsed user inputted arguments.
+    """
+
+    parser = argparse.ArgumentParser(description='Argument parser for creating the genereated dataset CSVs.')
+
+    parser.add_argument("--python_command", type=str,
+            help="Command to actually run python on your device. Examples include python3, python, py, etc...",
+            default="python3")
+
+    # Parse arguments.
+    parsed_args = parser.parse_args(args)
+
+    return parsed_args
 
 def load_timelist(reader, timelist):
     """
@@ -392,7 +414,12 @@ def add_to_timelist(timelist, filepath):
 
 if __name__ == "__main__":
 
-    generation_script = "ElevatorProject/data/create_csv.py"
+    # Get parsed args.
+    args = argparse_create((sys.argv[1:]))
+
+    python_command = args.python_command
+
+    gen_script = "data/create_csv.py"
 
     # Initialize CSV Tracker.
     first_row = ["number_samples", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
@@ -409,8 +436,9 @@ if __name__ == "__main__":
         full_run_result = np.zeros(6)
 
         for run in tqdm(range(RUNS)):
-
-            subprocess.run(["python3", generation_script,f"--set_persons={number_people}"])
+            
+            full_gen_path = script_dir.replace("simulations", "") + gen_script
+            subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
 
             # Initiliaze Full Timelist with reader.
             full_timelist = TimeList()
@@ -435,14 +463,14 @@ if __name__ == "__main__":
                 current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
                 log.add_log_pit(current_log_pit)
                 current_state = result_state
-                if count > 10000:
-                    print("----------------------------------------")
-                    print(current_state.elevator.persons_in_elevator)
-                    print(current_state.elevator.current_floor)
-                    print(current_state.up_calls)
-                    print(current_state.down_calls)
-                    print(current_state.elevator.curr_weight)
-                    print(current_event)
+                #if count > 10000:
+                #    print("----------------------------------------")
+                #    print(current_state.elevator.persons_in_elevator)
+                #    print(current_state.elevator.current_floor)
+                #    print(current_state.up_calls)
+                #    print(current_state.down_calls)
+                #    print(current_state.elevator.curr_weight)
+                #    print(current_event)
 
             # Prints out the length of total_time
             length_total_time = len(total_time)
