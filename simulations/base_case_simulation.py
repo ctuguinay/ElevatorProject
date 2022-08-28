@@ -53,7 +53,7 @@ def argparse_create(args):
 
     parser.add_argument("--python_command", type=str,
             help="Command to actually run python on your device. Examples include python3, python, py, etc...",
-            default="py")
+            default="python3")
 
     # Parse arguments.
     parsed_args = parser.parse_args(args)
