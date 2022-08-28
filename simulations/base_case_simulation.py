@@ -422,7 +422,7 @@ if __name__ == "__main__":
     gen_script = "data/create_csv.py"
 
     # Initialize CSV Tracker.
-    first_row = ["number_samples", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
+    first_row = ["number_samples", "number_calls", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
     tracker = [first_row]
 
     # Get csv path.
@@ -433,7 +433,7 @@ if __name__ == "__main__":
     for number_people_pre in range(20):
         number_people = (number_people_pre + 1) * 40
 
-        full_run_result = np.zeros(6)
+        full_run_result = np.zeros(7)
 
         for run in tqdm(range(RUNS)):
             
@@ -443,6 +443,8 @@ if __name__ == "__main__":
             # Initiliaze Full Timelist with reader.
             full_timelist = TimeList()
             full_timelist = add_to_timelist(full_timelist, full_path)
+            f = open(full_path)
+            num_calls = len(f.readlines())
 
             # Get initial values.
             total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, -1)
@@ -492,7 +494,7 @@ if __name__ == "__main__":
             sum_total_time = length_total_time * mean_total_time
             #print(sum_total_time)
 
-            row = np.array([number_people, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time])
+            row = np.array([number_people, num_calls, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time])
             full_run_result += row
         
         full_run_result /= RUNS
