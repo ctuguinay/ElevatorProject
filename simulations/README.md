@@ -14,3 +14,11 @@ python base_case_simulation.py --python_command python3
 * Use ``--python_command (insert command)`` to use the command your device uses to run Python.
 
 * Explore the classes we will be using for Simulations at `classes`.
+
+* Run the RL Training Model in Python:
+```
+python rl_training.py --python_command python3
+```
+* Again, use the ``--python_command (insert command)`` to use the command your device uses to run Python.
+
+* Explore the classes we will be using for Simulations at `classes`.

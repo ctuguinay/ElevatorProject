@@ -5,8 +5,9 @@ try:
     from simulations.classes.TimeList import TimeList, TimeListEvent
     from simulations.classes.EventObjects import HallCall
     from simulations.classes.Model import Model
-    from simulations.classes.Commands import Idle, OpenCloseDoors, Move
+    from simulations.classes.Commands import Idle, OpenCloseDoors, Move, Command
     from simulations.classes.Log import Log, LogPIT
+    from simulations.classes.DQNAgent import Agent
 except:
     from classes.EventObjects import Arrival, DoorClose
     from classes.Elevator import Elevator
@@ -14,20 +15,27 @@ except:
     from classes.TimeList import TimeList, TimeListEvent
     from classes.EventObjects import HallCall
     from classes.Model import Model
-    from classes.Commands import Idle, OpenCloseDoors, Move
+    from classes.Commands import Idle, OpenCloseDoors, Move, Command
     from classes.Log import Log, LogPIT
+    from classes.DQNAgent import Agent
 
-from math import log1p, e
-import csv
+try:
+    from simulations.base_case_simulation import argparse_create, initialize_values, add_to_timelist, state_to_elevator_input
+except:
+    from base_case_simulation import argparse_create, initialize_values, add_to_timelist, state_to_elevator_input
+
+from numpy import log1p, e
+from math import sqrt
+from concurrent.futures import process
 import os
+import sys
+import torch
 import random
-from statistics import mean, median
-from typing import Tuple, Dict
 import subprocess
 import numpy as np
-import sys
-from tqdm import tqdm
-import argparse
+from statistics import mean, median
+
+EPSILON = 0.8 # Set Greedy Strategy constant.
 
 NUM_FLOORS = 8
 HEIGHT = {value:key for value in range(1, NUM_FLOORS + 1) for key in [(value - 1) * 4.5]} # A height dict mapping each floor to its height above the ground floor
@@ -35,77 +43,86 @@ HEIGHT = {value:key for value in range(1, NUM_FLOORS + 1) for key in [(value - 1
     # the average floor-to-floor height is 4.65 (here glossed as 4.5) m in an office building). Theoretically,
     # this can be altered to create variable distances in the case of a specific building.
 
-# Number of times the simulation is run for each number of people
-RUNS = 50
+SEED = 0 # Sets random seed for the training.
 
-def argparse_create(args):
+def initialize_values(timelist, number_samples, return_model):
     """
-    Parser to parse this script's arguments that pertain to our simulation.
+    Initializes values for the base case simulation.
 
     Args:
-        args: User inputted arguments that have yet to be parsed.
+        timelist: Timelist object with all the hall calls.
+        number_samples: Integer for max number of samples. If -1, gives all samples.
+        return_model: Boolean for whether to return a model.
 
     Returns:
-        parsed_args: Parsed user inputted arguments.
+        total_time: Array that is the initialized total wait time of all people that left the elevator here.
+        timelist: Timelist object that has been initialized with a sample of hall calls.
+        current_state: State object that has been modified to take into account the most recent event in the simulation.
+        elevator: Elevator object that has been properly initialized.
+        log: Log object to track every part of the simulation.
+        model: Initialized DQN model. Is only returned if return_model is true.
     """
 
-    parser = argparse.ArgumentParser(description='Argument parser for creating the genereated dataset CSVs.')
+    # Initialize Total Time for all passengers that takes into account wait time and travel time.
+    total_time = []
 
-    parser.add_argument("--python_command", type=str,
-            help="Command to actually run python on your device. Examples include python3, python, py, etc...",
-            default="py")
+    
+    # Sample from full timelist.
+    if number_samples != -1:
+        full_timelist_future = full_timelist.future
+        random.seed(SEED)
+        future_samples = random.sample(full_timelist_future, number_samples)
+        future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
+        timelist = TimeList()
+        timelist.future = future_samples
+    else:
+        timelist = full_timelist
 
-    # Parse arguments.
-    parsed_args = parser.parse_args(args)
+    # Initialize Elevator.
+    floors = list(HEIGHT.keys())
+    start_floor = floors[0]
+    top_floor = floors[-1]
+    capacity = 1500.0
+    wait_time = 15
+    time = 27000
+    elevator_speed = 5
+    persons_dictionary = {floor: [] for floor in floors}
+    buttons_pressed = {floor: False for floor in floors}
+    elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
 
-    return parsed_args
+    # Initialize current_state.
+    up_calls = {floor: [] for floor in floors}
+    down_calls = {floor: [] for floor in floors}
+    current_state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
 
-def load_timelist(reader, timelist):
-    """
-    Loads the timelist object with timelist events that are made from the rows in reader.
+    # Initialize Log object and the first LogPIT object and place the LogPIT object into the Log object..
+    log = Log()
+    start_log_pit = LogPIT(current_state, timelist, [], [])
+    log.add_log_pit(start_log_pit)
 
-    Args:
-        reader: Reader object that has read our input csv.
-        timelist: Newly initialized TimeList object.
+    # Initialize Model
+    if return_model:
+        model = Agent(state_size = 27, action_size = 5, seed = SEED)
+        return total_time, timelist, elevator, current_state, log, model
+    else:
+        return total_time, timelist, elevator, current_state, log
 
-    Returns:
-        timelist: TimeList object filled with TimeListEvents containing information from the reader.
-    """
-
-    """
-    WHAT NEEDS TO BE DONE: Use reader somewhere here to load the timelist object.
-    """
-
-    for row in reader:
-        if row[0] == "person_id":
-            continue
-        row_obj = HallCall(
-            int(row[0]), # person_id
-            float(row[1]), # time of the call
-            int(row[2]), # start_floor
-            int(row[3]), # dest floor
-            float(row[4]) # weight
-        )
-        timelist.add_event(TimeListEvent(
-            float(row[1]), # time
-            "Hall Call", # these are all hall calls
-            row_obj
-        ))
-
-    return timelist
-
-def useState(timelist: TimeList, current_state: State, current_event: TimeListEvent, model: Model) -> tuple:
+def useState(timelist: TimeList, current_state: State, current_event: TimeListEvent, model: Agent, action: Command) -> tuple:
     """
     Makes a single action using the current_state and modifies both the timelist and the current state to match the action.
 
     Args:
-        item: TimeListEvent object representing the most recent event in the simulation.
+        timelist: TimeList object representing all the events that will occur in the simulation (that we know of).
         current_state: State object representing the current state of the simulation.
+        current_event: TimeListEvent object representing the most recent event in the simulation.
+        action: Command object representing what the model wishes to do.
 
     Returns:
         time_list: the timelist, perhaps with events added due to the instructions on what action to take next
         current_state: State object that has been modified to take into account the most recent event in the simulation.
-        added_time: the total wait time of all people that left the elevator here
+        added_time: the total wait time of all people that left the elevator here.
+
+        reward
     """
 
     """
@@ -144,7 +161,14 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     if not timelist.has_next() and current_event.object_type != "Hall Call" and current_state.elevator.total_passenger_weight() == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
         # timelist and exit out of the while loop in main
-        return timelist, current_state, added_time
+        if timelist.has_next():
+            done = False
+        else:
+            done = True
+
+        reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+        return timelist, current_state, added_time, reward, done
 
     # TODO: The first thing we do is modify the attributes that can be modified without knowing the model's
     # output (which is the command telling us the next thing to do).
@@ -169,7 +193,6 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         current_state.elevator.letting_people_in = False
         current_state.elevator.going_up = None
         
-    
 
     else:
         raise ValueError("Next event had unexpected type")
@@ -177,7 +200,14 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     if current_state.elevator.moving:
         # the elevator is currently moving between floors so
         # we can't do anything. No need to call the Model, just return with the state we've changed
-        return timelist, current_state, added_time
+        if timelist.has_next():
+            done = False
+        else:
+            done = True
+
+        reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+        return timelist, current_state, added_time, reward, done
 
 
     if current_state.elevator.letting_people_in:
@@ -195,12 +225,17 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         else: # going down
             #let people who have downcalls into elevator
             current_state.elevator.add_floor(current_state.down_calls)
+        if timelist.has_next():
+            done = False
+        else:
+            done = True
 
-        return timelist, current_state, added_time
+        reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+        return timelist, current_state, added_time, reward, done
     
     # ask the model what to do
-    capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(current_state)
-    command = model.get_command(capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons)
+    command = action
 
     #print("------------------------")
     #print(f"buttons_pressed: {buttons_pressed}")
@@ -209,7 +244,13 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     #print(current_state.time)
 
     if type(command) is Idle:
-        return timelist, current_state, added_time
+        if timelist.has_next():
+            done = False
+        else:
+            done = True
+        reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+        return timelist, current_state, added_time, reward, done
 
     elif type(command) is Move:
         
@@ -249,8 +290,13 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         else:
             arrival_floor = current_state.elevator.current_floor - 1
         if arrival_floor < 1 or arrival_floor > current_state.elevator.top_floor:
-            # If the model gives us invalid instructions, just idle
-            return timelist, current_state, added_time
+            if timelist.has_next():
+                done = False
+            else:
+                done = True
+            reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+            return timelist, current_state, added_time, reward, done
         arrival_time = current_state.time + journey_time()
         new_event = TimeListEvent(arrival_time, 'Arrival', Arrival(arrival_floor))
         timelist.add_event(new_event)
@@ -278,6 +324,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
             calls = current_state.down_calls
 
         current_state.elevator.going_up = command.going_up
+
         current_state.elevator.add_floor(calls)
         current_state.elevator.letting_people_in = True
         current_state.elevator.buttons_pressed[current_state.elevator.current_floor] = False
@@ -289,127 +336,87 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     else:
         raise ValueError("Return from Model had unexpected type")
 
-    return timelist, current_state, added_time
+    if timelist.has_next():
+        done = False
+    else:
+        done = True
 
-def state_to_elevator_input(state:State) -> Tuple[float, float, int,
-        Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
+    reward = model.qnetwork_local.forward(process_state(current_state, True))
+
+    return timelist, current_state, added_time, reward, done
+
+def process_state(state, use_tensor = False):
     """
-    Arguments:
-        state: the state to be transformed
-    Takes a state and process it into the information the model is supposed to have
-    when it gets called. Specifically, this returns, in order: the elevator's current
-    position, the buttons pressed within the elevator (dict from floor num to if made), 
-    the up_calls that have been made (dict from floor num to if made), 
-    and the down_calls that have been made (dict from floor num to if made)
-    """
-    curr_pos = state.elevator.current_floor
-    buttons_pressed = state.elevator.buttons_pressed
-    up_buttons = {}
-    for floor, call_list in state.up_calls.items():
-        if call_list == []:
-            up_buttons[floor] = False
-        else:
-            up_buttons[floor] = True
+    Processes state so that it can be passed into the model.
     
-    down_buttons = {}
-    for floor, call_list in state.down_calls.items():
-        if call_list == []:
-            down_buttons[floor] = False
-        else:
-            down_buttons[floor] = True
-    return state.elevator.capacity, state.elevator.curr_weight, \
-        curr_pos, buttons_pressed, up_buttons, down_buttons
-
-# def getTotalEventTimes(result_state):
-#     """
-#     Gets the total wait and travel times of passengers that have finished their travelling in THIS particular event.
-
-#     Args:
-#         result_state: State object representing the 
-#         current_state: State object representing the current state of the simulation.
-
-#     Returns:
-#         total_event_times: Integer for the total wait and travel time in seconds of passengers that have finished their 
-#         travelling in THIS particular event
-#     """
-
-#     total_event_times = 0
-
-#     """
-#     WHAT NEEDS TO BE DONE: Logic for adding onto total_event_times using what is given to us in result state.
-#     """
-
-#     return total_event_times
-
-def initialize_values(full_timelist, number_samples):
-    """
-    Initializes values for the base case simulation.
-
     Args:
-        number_samples: Integer for max number of samples. If -1, gives all samples.
-        full_timelist: Timelist object with all the hall calls.
+        state: State object that represents the state of the simulation.
 
     Returns:
-        total_time: Array that is the initialized total wait time of all people that left the elevator here.
-        timelist: Timelist object that has been initialized with a sample of hall calls.
-        current_state: State object that has been modified to take into account the most recent event in the simulation.
-        elevator: Elevator object that has been properly initialized.
-        log: Log object to track every part of the simulation.
-        model: Initialized base case model.
+        state_array: Numpy or Tensor array that represents the state that can be placed within the model.
     """
 
-    # Initialize Total Time for all passengers that takes into account wait time and travel time.
-    total_time = []
+    capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(state)
+    total_val = capacity + curr_weight + curr_pos
+    temp_array = [capacity/total_val, curr_weight/total_val, curr_pos/total_val]
 
-    # Sample from full timelist.
-    if number_samples != -1:
-        full_timelist_future = full_timelist.future
-        future_samples = random.sample(full_timelist_future, number_samples)
-        future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
-        timelist = TimeList()
-        timelist.future = future_samples
+    for array in [buttons_pressed, up_buttons, down_buttons]:
+        for item in array:
+            if item:
+                temp_array.append(1)
+            else:
+                temp_array.append(0)
+    if use_tensor:
+        state_array = torch.tensor(temp_array)
     else:
-        timelist = full_timelist
+        state_array = np.array(temp_array)
+        
+    return state_array
 
-    # Initialize Elevator.
-    floors = list(HEIGHT.keys())
-    start_floor = floors[0]
-    top_floor = floors[-1]
-    capacity = 1500.0
-    wait_time = 15
-    time = 27000
-    elevator_speed = 5
-    persons_dictionary = {floor: [] for floor in floors}
-    buttons_pressed = {floor: False for floor in floors}
-    elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
-
-    # Initialize current_state.
-    up_calls = {floor: [] for floor in floors}
-    down_calls = {floor: [] for floor in floors}
-    current_state = State(up_calls, down_calls, time, elevator_speed, wait_time, elevator)
-
-    # Initialize Log object and the first LogPIT object and place the LogPIT object into the Log object..
-    log = Log()
-    start_log_pit = LogPIT(current_state, timelist, [], [])
-    log.add_log_pit(start_log_pit)
-
-    # Initialize Model
-    model = Model()
-
-    return total_time, timelist, elevator, current_state, log, model
-
-def add_to_timelist(timelist, filepath):
-    try:
-        timelist = TimeList()
-        with open(filepath, mode='r', newline='') as file:
-            reader = csv.reader(file, delimiter=',', quotechar='"')
-            timelist = load_timelist(reader,timelist)
-    except PermissionError:
-        # retry
-        print("Permission Error excepted")
-        return add_to_timelist(timelist, filepath)
+def process_action(action_value):
+    """
+    Processes action so that it can be passed into the model.
     
-    return timelist
+    Args:
+        action_value: Int that represents the action that can be placed within the model.
+
+    Returns:
+        action: Command object that represents the action to take in the simulation.
+    """
+
+    if action_value == 0:
+        return Idle()
+    elif action_value == 1:
+        return OpenCloseDoors(True)
+    elif action_value == 2:
+        return OpenCloseDoors(False)
+    elif action_value == 3:
+        return Move(True)
+    elif action_value == 4: 
+        return Move(False)
+
+def number_people_waiting(state):
+    """
+    Gets the number of people currently waiting.
+
+    Args:
+        state: State object representing the current simulation's state.
+    Returns:
+        number: Integer representing number of people currently waiting.
+    """
+    
+    number = 0
+
+    up_calls = state.up_calls
+    down_calls = state.down_calls
+    persons_in_elevator = state.elevator.persons_in_elevator
+
+    for dictionary in [up_calls, down_calls, persons_in_elevator]:
+        people_array = dictionary.values()
+        for _ in people_array:
+            number += 1
+
+    return number
 
 
 if __name__ == "__main__":
@@ -417,62 +424,72 @@ if __name__ == "__main__":
     # Get parsed args.
     args = argparse_create((sys.argv[1:]))
 
+    number_people = 200
+
     python_command = args.python_command
 
     gen_script = "data/create_csv.py"
 
     # Initialize CSV Tracker.
-    first_row = ["number_samples", "number_calls", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
+    first_row = ["number_samples", "number_times", "mean_times", "median_times", "max_times", "sum_times"]
     tracker = [first_row]
 
     # Get csv path.
     script_dir = os.path.dirname(__file__)
     full_path = os.path.join(script_dir, "data", "CSVs", "data.csv").replace("simulations\\", "")
 
-    # Iterate through number of Hall Call samples.
-    for number_people_pre in range(20):
-        number_people = (number_people_pre + 1) * 40
+    full_gen_path = script_dir.replace("simulations", "") + gen_script
+    subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
 
-        full_run_result = np.zeros(7)
+    # Initiliaze Full Timelist with reader.
+    full_timelist = TimeList()
+    full_timelist = add_to_timelist(full_timelist, full_path)
 
-        for run in tqdm(range(RUNS)):
-            
-            full_gen_path = script_dir.replace("simulations", "") + gen_script
-            subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
+    for epoch in range(150):
 
-            # Initiliaze Full Timelist with reader.
-            full_timelist = TimeList()
-            full_timelist = add_to_timelist(full_timelist, full_path)
-            f = open(full_path)
-            num_calls = len(f.readlines())
+        full_gen_path = script_dir.replace("simulations", "") + gen_script
+        subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
 
-            # Get initial values.
-            total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, -1)
+        # Initiliaze Full Timelist with reader.
+        full_timelist = TimeList()
+        full_timelist = add_to_timelist(full_timelist, full_path)
 
-            # Repeat until no more events in timelist.
-            count=0
-            while timelist.has_next():
-                count += 1
-                current_event = timelist.next_event()
-                timelist, result_state, added_time = useState(timelist, current_state, current_event, model)
+        # Get initial values.
+        if epoch == 0:
+            total_time, timelist, elevator, current_state, log, model = initialize_values(full_timelist, -1, True)
+        else:
+            total_time, timelist, elevator, current_state, log = initialize_values(full_timelist, -1, False)
 
-                weight = 0
-                for floor in result_state.elevator.persons_in_elevator:
-                    for person in result_state.elevator.persons_in_elevator[floor]:
-                        weight += person.weight
+        #if epoch == 9:
+        #    EPSILON = 0
 
-                total_time = total_time + added_time
-                current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
-                log.add_log_pit(current_log_pit)
-                current_state = result_state
-                #if count > 10000:
-                #    print("----------------------------------------")
-                #    print(current_state.elevator.persons_in_elevator)
-                #    print(current_state.elevator.current_floor)
-                #    print(current_state.up_calls)
-                #    print(current_state.down_calls)
-                #    print(current_state.elevator.curr_weight)
-                #    print(current_event)
+        # Repeat until no more events in timelist.
+        count = 0
+        while timelist.has_next():
+            count += 1
+            action = process_action(model.act(process_state(current_state), EPSILON))
+            current_event = timelist.next_event()
+            timelist, result_state, added_time, reward, done = useState(timelist, current_state, current_event, model, action)
+            reward = reward - number_people_waiting(result_state) ** (1. / 3)
+            model.step(current_state,action,reward,process_state(result_state),done)
+            weight = 0
+            for floor in result_state.elevator.persons_in_elevator:
+                for person in result_state.elevator.persons_in_elevator[floor]:
+                    weight += person.weight
+
+            total_time = total_time + added_time
+            current_log_pit = LogPIT(result_state, timelist, added_time, total_time)
+            log.add_log_pit(current_log_pit)
+            current_state = result_state
+
+        if count % 10 == 0: # Greedy Strategy Epsilon Increase:
+            if EPSILON != 1:
+                EPSILON += .1
+
+        print(f"Epoch: {epoch + 1}")
+        print(f"Number of Events: {count}")
+
+        if len(total_time) > 0:
 
             # Prints out the length of total_time
             length_total_time = len(total_time)
@@ -494,21 +511,11 @@ if __name__ == "__main__":
             sum_total_time = length_total_time * mean_total_time
             #print(sum_total_time)
 
-            row = np.array([number_people, num_calls, length_total_time, mean_total_time, median_total_time, max_total_time, sum_total_time])
-            full_run_result += row
+            print(f"Number of People Moved: {length_total_time}")
+            print(f"Mean Total Time: {mean_total_time}")
+            print(f"Median Total Time: {median_total_time}")
+            print(f"Max Total Time: {max_total_time}")
+            print(f"Sum Total Time: {sum_total_time}")
         
-        full_run_result /= RUNS
-        print(full_run_result)
-        
-        tracker.append(full_run_result.tolist())
-
-    # Open the CSV file that we will be writing to.
-    csv_name = "tracker.csv"
-    with open(os.path.join(sys.path[0], "CSVs", "tracker.csv"), mode='w+', newline='') as file:
-
-        # Define the CSV writer.
-        writer = csv.writer(file, delimiter=',', quotechar='"')
-
-        # Iterate through tracker list.
-        for row in tracker:
-            writer.writerow(row)
+        else:
+            print("Model Has Moved No People.")

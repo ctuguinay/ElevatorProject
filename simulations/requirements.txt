@@ -1,4 +1,6 @@
 # For just the simulations subdirectory.
 # Make sure you are using AT LEAST Python 3.8.
 
-tqdm # Pretty progress bar
+tqdm==4.64.0 # Pretty progress bar
+torch==1.12.1 # Tensors and Dynamic neural networks in Python with strong GPU acceleration.
+numpy==1.23.2 # NumPy is the fundamental package for array computing with Python.

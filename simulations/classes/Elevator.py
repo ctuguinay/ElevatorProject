@@ -86,7 +86,7 @@ class Elevator(object):
         """
 
         if button_pressed > self.top_floor or button_pressed < 1:
-            raise TypeError("Target floor " + button_pressed + " is not in range of floors.")
+            raise TypeError("Target floor " + str(button_pressed) + " is not in range of floors.")
 
         self.buttons_pressed[button_pressed] = True
         return self.buttons_pressed
