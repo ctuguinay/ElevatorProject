@@ -17,11 +17,11 @@ if __name__ == "__main__":
 
     parser.add_argument("--set_width", type=int,
                         help="Sets with of our Maplotlib Canvas.",
-                        default=15)
+                        default=9)
 
     parser.add_argument("--set_height", type=int,
                         help="Sets height of our Maplotlib Canvas.",
-                        default=15)
+                        default=9)
 
     # Parse arguments.
     args = parser.parse_args()
@@ -53,50 +53,56 @@ if __name__ == "__main__":
     
     # print(data_np)
 
-    # Delete header row.
-    data_np = np.delete(data_np, (0), axis=0)
+    x_val_cols = [0,1]
+    x_label = ["Number of People", "Number of Hall Calls"]
 
-    # Get columns.
-    number_samples = data_np[:, 0]
-    mean_times = data_np[:, 2]
-    median_times = data_np[:, 3]
-    max_times = data_np[:, 4]
-    sum_times = data_np[:, 5]
+    for i in range(len(x_val_cols)):
 
-    # Set subplots.
-    figure, axis = plt.subplots(2, 2)
+        # Delete header row.
+        data_np = np.delete(data_np, (0), axis=0)
 
-    # Set figure width and height.
-    figure.set_figwidth(width)
-    figure.set_figheight(height)
+        # Get columns.
+        number_samples = data_np[:, x_val_cols[i]]
+        mean_times = data_np[:, 3]
+        median_times = data_np[:, 4]
+        max_times = data_np[:, 5]
+        sum_times = data_np[:, 6]
 
-    # Create mean times graph.
-    axis[0,0].plot(number_samples, mean_times)
+        # Set subplots.
+        figure, axis = plt.subplots(2, 2)
+        figure.tight_layout(h_pad=2)
 
-    # Title mean times graph.
-    axis[0,0].set_title("Mean Times Plot")
-    axis[0,0].set(ylabel='Time in Seconds')
+        # Set figure width and height.
+        figure.set_figwidth(width)
+        figure.set_figheight(height)
 
-    # Create median times graph.
-    axis[0,1].plot(number_samples, median_times)
+        # Create mean times graph.
+        axis[0,0].plot(number_samples, mean_times)
 
-    # Title median times graph.
-    axis[0,1].set_title("Median Times Plot")
-    axis[0,1].set(ylabel='Time in Seconds')
+        # Title mean times graph.
+        axis[0,0].set_title("Mean Times Plot")
+        axis[0,0].set(xlabel=x_label[i], ylabel='Time in Seconds')
 
-    # Create max times graph.
-    axis[1,0].plot(number_samples, max_times)
+        # Create median times graph.
+        axis[0,1].plot(number_samples, median_times)
 
-    # Title max times graph.
-    axis[1,0].set_title("Max Times Plot")
-    axis[1,0].set(xlabel='Number of Samples', ylabel='Time in Seconds')
+        # Title median times graph.
+        axis[0,1].set_title("Median Times Plot")
+        axis[0,1].set(xlabel=x_label[i], ylabel='Time in Seconds')
 
-    # Create sum times graph.
-    axis[1,1].plot(number_samples, sum_times)
+        # Create max times graph.
+        axis[1,0].plot(number_samples, max_times)
 
-    # Title sum times graph.
-    axis[1,1].set_title("Sum Times Plot")
-    axis[1,1].set(xlabel='Number of Samples', ylabel='Time in Seconds')
+        # Title max times graph.
+        axis[1,0].set_title("Max Times Plot")
+        axis[1,0].set(xlabel=x_label[i], ylabel='Time in Seconds')
 
-    # Show plot
-    plt.show()
+        # Create sum times graph.
+        axis[1,1].plot(number_samples, sum_times)
+
+        # Title sum times graph.
+        axis[1,1].set_title("Sum Times Plot")
+        axis[1,1].set(xlabel=x_label[i], ylabel='Time in Seconds')
+
+        # Show plot
+        plt.show()
