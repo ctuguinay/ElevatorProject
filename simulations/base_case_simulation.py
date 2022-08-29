@@ -146,26 +146,26 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         # timelist and exit out of the while loop in main
         return timelist, current_state, added_time
 
-    # TODO: The first thing we do is modify the attributes that can be modified without knowing the model's
+    # The first thing we do is modify the attributes that can be modified without knowing the model's
     # output (which is the command telling us the next thing to do).
     # For example, we advance the state's time to the time of this event
     current_state.time = current_event.time
 
     
     if current_event.object_type == "Arrival":
-        # TODO: Things that are specific to arrivals, like setting current_state.elevator.moving to false and
+        # Things that are specific to arrivals, like setting current_state.elevator.moving to false and
         current_state.elevator.moving = False
         current_state.elevator.current_floor = current_event.object.floor
     
     elif current_event.object_type == "Hall Call":
-        # TODO: Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
+        # Things that are specific to Hall Calls, like adding the people the up_calls or down_calls lists
         if current_event.object.dest_floor > current_state.elevator.current_floor:
             current_state.up_calls[current_event.object.start_floor].append(current_event.object)
         else: # destination < current_event.start_floor
             current_state.down_calls[current_event.object.start_floor].append(current_event.object)
 
     elif current_event.object_type == "Door Close":
-        # TODO: Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
+        # Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
         current_state.elevator.letting_people_in = False
         current_state.elevator.going_up = None
         
@@ -181,7 +181,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
 
 
     if current_state.elevator.letting_people_in:
-        # TODO: If anyone's on this floor, change state to reflect letting them in to this elevator. We
+        # If anyone's on this floor, change state to reflect letting them in to this elevator. We
         # again can't change our behavior, so no need to call the Model, just return with the state we've changed.
         current_state.elevator.moving = False
 
@@ -214,34 +214,27 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     elif type(command) is Move:
         
         def journey_time() -> int:
+            TIME_CONSTANT = 3 # Based on the accelerometer data, roughly 3 seconds to reach the point
+                # of slowing.
+            DISTANCE_CONSTANT = MAX_SPEED / 0.7 # The max speed divided by the accelerometer max
+                # speed, which gives the scaling factor - since we define the cutoff distance to be
+                # 1 such that the elevator is reaching the point of slowing, that cutoff will be
+                # scaled by this factor.
+            MAX_SPEED = 5 # A dummy value.
+            # SLOWING_DISTANCE = (1/2) * MAX_SPEED * TIME_CONSTANT
             start = current_state.elevator.current_floor
-            end = start + 1 # not sure what to do here... will speak to Mark -Raymond
+            total_distance = abs(HEIGHT[start] - HEIGHT[start + {True: 1, False: - 1}[command.is_up]])
+            #if (current_state.dest_floor - current_state.elevator.current_floor < DISTANCE_CONSTANT):
+                # start to decelarating until speed = 0
+                # total_time = ...
+            if (not current_state.elevator_speed and is_stopping(elevator)):
+                total_time = 2 * TIME_CONSTANT + (total_distance - 2 * DISTANCE_CONSTANT) / MAX_SPEED
+            elif(not current_state.elevator_speed and is_stopping(elevator)):
+                total_time = TIME_CONSTANT + (total_distance - DISTANCE_CONSTANT) / MAX_SPEED
+            elif(current_state.elevator_speed and not is_stopping(elevator)):
+                total_time = (total_distance - DISTANCE_CONSTANT) / MAX_SPEED
 
-            # one possible approach below using sigmoid functions to model the accelerating and
-            # deccelerating periods, solved for the distance traversed
-            PERCENT_ACCELERATING = 0.2 # Represents the percentage of time it takes to accelerate to
-                # top speed when going from one floor to the one immediately above.
-
-            def variable_if_arrival():
-                """ 
-                Gives the time taken to traverse the floors if the elevator is stopping at the
-                next floor.
-                """
-                floors = abs(start - end)
-                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
-                        5 * PERCENT_ACCELERATING - 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) - 5)) // 5
-
-            def variable_if_continuing():
-                """
-                Gives the time taken to traverse the floors if the elevator is not stopping at
-                the next floor.
-                """
-                floors = abs(start - end)
-                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
-                        0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) + 5)) // 5 + PERCENT_ACCELERATING
-
-            # temporarily
-            return current_state.elevator_speed
+            return total_time
 
         arrival_floor = None
         if command.if_up == True:
@@ -290,6 +283,12 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         raise ValueError("Return from Model had unexpected type")
 
     return timelist, current_state, added_time
+
+
+def is_stopping(elevator):
+    if (elevator.next_floor == HallCall.dest_floor): # current_state.dest_floor
+        return True
+
 
 def state_to_elevator_input(state:State) -> Tuple[float, float, int,
         Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
@@ -378,7 +377,7 @@ def initialize_values(full_timelist, number_samples):
     capacity = 1500.0
     wait_time = 15
     time = 27000
-    elevator_speed = 5
+    elevator_speed = 0
     persons_dictionary = {floor: [] for floor in floors}
     buttons_pressed = {floor: False for floor in floors}
     elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
