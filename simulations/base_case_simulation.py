@@ -214,34 +214,24 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     elif type(command) is Move:
         
         def journey_time() -> int:
+            TIME_CONSTANT = 3 # Based on the accelerometer data, roughly 3 seconds to reach the point
+                # of slowing.
+            DISTANCE_CONSTANT = MAX_SPEED / 0.7 # The max speed divided by the accelerometer max
+                # speed, which gives the scaling factor - since we define the cutoff distance to be
+                # 1 such that the elevator is reaching the point of slowing, that cutoff will be
+                # scaled by this factor.
+            MAX_SPEED = 5 # A dummy value.
+            
             start = current_state.elevator.current_floor
-            end = start + 1 # not sure what to do here... will speak to Mark -Raymond
-
-            # one possible approach below using sigmoid functions to model the accelerating and
-            # deccelerating periods, solved for the distance traversed
-            PERCENT_ACCELERATING = 0.2 # Represents the percentage of time it takes to accelerate to
-                # top speed when going from one floor to the one immediately above.
-
-            def variable_if_arrival():
-                """ 
-                Gives the time taken to traverse the floors if the elevator is stopping at the
-                next floor.
-                """
-                floors = abs(start - end)
-                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
-                        5 * PERCENT_ACCELERATING - 0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) - 5)) // 5
-
-            def variable_if_continuing():
-                """
-                Gives the time taken to traverse the floors if the elevator is not stopping at
-                the next floor.
-                """
-                floors = abs(start - end)
-                return ((((current_state.elevator_speed ** -1) / 4) ** -1) * floors + 
-                        0.5 * PERCENT_ACCELERATING * (log1p(e ** 5) + 5)) // 5 + PERCENT_ACCELERATING
-
-            # temporarily
-            return current_state.elevator_speed
+            total_distance = abs(HEIGHT[start] - HEIGHT[start + {True: 1, False: - 1}[command.is_up]])
+            if (not current_state.elevator_speed and command.is_stopping):
+                total_time = 2 * TIME_CONSTANT + (total_distance - 2 * DISTANCE_CONSTANT) / MAX_SPEED
+            elif(not current_state.elevator_speed and command.is_stopping):
+                total_time = TIME_CONSTANT + (total_distance - DISTANCE_CONSTANT) / MAX_SPEED
+            elif(current_state.elevator_speed and not command.is_stopping):
+                total_time = (total_distance - DISTANCE_CONSTANT) / MAX_SPEED
+            
+            return total_time
 
         arrival_floor = None
         if command.if_up == True:
@@ -378,7 +368,7 @@ def initialize_values(full_timelist, number_samples):
     capacity = 1500.0
     wait_time = 15
     time = 27000
-    elevator_speed = 5
+    elevator_speed = 0
     persons_dictionary = {floor: [] for floor in floors}
     buttons_pressed = {floor: False for floor in floors}
     elevator = Elevator(start_floor, top_floor, capacity, persons_dictionary, buttons_pressed)
