@@ -34,6 +34,8 @@ class State(object):
         wait_time: Integer for the time an elevator waits on each floor for people to get in. This represents the physical processes
             of opening the door, waiting for people to enter, and closing the door
         elevator: Elevator object which the simulation runs on.
+        aggregated_reward: The environment's reward builds until the model is actually called, at which point
+        at which point this value is given to the model and set to 0
     """
 
     up_calls: dict
@@ -42,3 +44,7 @@ class State(object):
     elevator_speed: int
     wait_time: int
     elevator: Elevator
+
+    def __post_init__(self):
+        """Sets other fields of state"""
+        self.aggregated_reward = 0
