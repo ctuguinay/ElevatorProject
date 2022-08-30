@@ -1,5 +1,5 @@
 try:
-    from simulations.classes.EventObjects import Arrival, DoorClose
+    from simulations.classes.EventObjects import Arrival, DoorClose, IdleEnd
     from simulations.classes.Elevator import Elevator
     from simulations.classes.State import State
     from simulations.classes.TimeList import TimeList, TimeListEvent
@@ -9,7 +9,7 @@ try:
     from simulations.classes.Log import Log, LogPIT
     from simulations.classes.DQNAgent import Agent
 except:
-    from classes.EventObjects import Arrival, DoorClose
+    from classes.EventObjects import Arrival, DoorClose, IdleEnd
     from classes.Elevator import Elevator
     from classes.State import State
     from classes.TimeList import TimeList, TimeListEvent
@@ -122,7 +122,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         current_state: State object that has been modified to take into account the most recent event in the simulation.
         added_time: the total wait time of all people that left the elevator here.
 
-        reward
+        reward: If the action given by the model is used, this is the reward given by the
+        environment. If not, this is None.
     """
 
     """
@@ -156,19 +157,18 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     # across all hall calls) whenever people get to their destination. added_time will be the amount by 
     # which we increment the total time waited by as a result of people getting to their destination during this event,
     # which will sometimes happen on Arrival events
+    time_diff = current_event.time - current_state.time
+    num_people = count_state(current_state)
+    curr_reward = - time_diff * num_people
+    current_state.aggregated_reward += curr_reward
+    reward = current_state.aggregated_reward
     added_time = []
 
-    if not timelist.has_next() and current_event.object_type != "Hall Call" and current_state.elevator.total_passenger_weight() == 0:
+    if not timelist.has_next() and current_event.object_type != "Hall Call" and num_people == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
         # timelist and exit out of the while loop in main
-        if timelist.has_next():
-            done = False
-        else:
-            done = True
-
-        reward = model.qnetwork_local.forward(process_state(current_state, True))
-
-        return timelist, current_state, added_time, reward, done
+        current_state.aggregated_reward = 0
+        return timelist, current_state, added_time, reward, True
 
     # TODO: The first thing we do is modify the attributes that can be modified without knowing the model's
     # output (which is the command telling us the next thing to do).
@@ -192,6 +192,12 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         # TODO: Things that are specific to Door Close, like setting current_state.elevator.letting_people_in to False
         current_state.elevator.letting_people_in = False
         current_state.elevator.going_up = None
+    
+    elif current_event.object_type == "Idle End":
+
+        # nothing happens here
+
+        pass
         
 
     else:
@@ -200,14 +206,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     if current_state.elevator.moving:
         # the elevator is currently moving between floors so
         # we can't do anything. No need to call the Model, just return with the state we've changed
-        if timelist.has_next():
-            done = False
-        else:
-            done = True
-
-        reward = model.qnetwork_local.forward(process_state(current_state, True))
-
-        return timelist, current_state, added_time, reward, done
+        
+        return timelist, current_state, added_time, None, False
 
 
     if current_state.elevator.letting_people_in:
@@ -225,14 +225,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         else: # going down
             #let people who have downcalls into elevator
             current_state.elevator.add_floor(current_state.down_calls)
-        if timelist.has_next():
-            done = False
-        else:
-            done = True
-
-        reward = model.qnetwork_local.forward(process_state(current_state, True))
-
-        return timelist, current_state, added_time, reward, done
+        return timelist, current_state, added_time, None, False
     
     # ask the model what to do
     command = action
@@ -244,13 +237,16 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     #print(current_state.time)
 
     if type(command) is Idle:
-        if timelist.has_next():
-            done = False
-        else:
-            done = True
-        reward = model.qnetwork_local.forward(process_state(current_state, True))
 
-        return timelist, current_state, added_time, reward, done
+        if not timelist.has_next():
+            # add an IdleEnd to stop the timelist from completely emptying out
+            new_event = TimeListEvent(current_state.time + 100 # default 100 seconds
+            , 'Idle End', IdleEnd())
+            timelist.add_event(new_event)
+            
+        
+        current_state.aggregated_reward = 0
+        return timelist, current_state, added_time, reward, False
 
     elif type(command) is Move:
         
@@ -290,13 +286,14 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         else:
             arrival_floor = current_state.elevator.current_floor - 1
         if arrival_floor < 1 or arrival_floor > current_state.elevator.top_floor:
-            if timelist.has_next():
-                done = False
-            else:
-                done = True
-            reward = model.qnetwork_local.forward(process_state(current_state, True))
-
-            return timelist, current_state, added_time, reward, done
+            current_state.aggregated_reward = 0
+            # treated like an Idle
+            if not timelist.has_next():
+            # add an IdleEnd to stop the timelist from completely emptying out
+                new_event = TimeListEvent(current_state.time + 100 # default 100 seconds
+                , 'Idle End', IdleEnd())
+                timelist.add_event(new_event)
+            return timelist, current_state, added_time, reward, False
         arrival_time = current_state.time + journey_time()
         new_event = TimeListEvent(arrival_time, 'Arrival', Arrival(arrival_floor))
         timelist.add_event(new_event)
@@ -336,14 +333,20 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     else:
         raise ValueError("Return from Model had unexpected type")
 
-    if timelist.has_next():
-        done = False
-    else:
-        done = True
+    current_state.aggregated_reward = 0
 
-    reward = model.qnetwork_local.forward(process_state(current_state, True))
+    return timelist, current_state, added_time, reward, False
 
-    return timelist, current_state, added_time, reward, done
+def count_state(state: State):
+    """Returns the number of people waiting in the state"""
+    ct = 0
+    for person_list in [state.up_calls, state.down_calls, state.elevator.persons_in_elevator]:
+        for floor in person_list:
+            for _ in person_list[floor]:
+                ct += 1
+    return ct
+    
+
 
 def process_state(state, use_tensor = False):
     """
@@ -395,29 +398,6 @@ def process_action(action_value):
     elif action_value == 4: 
         return Move(False)
 
-def number_people_waiting(state):
-    """
-    Gets the number of people currently waiting.
-
-    Args:
-        state: State object representing the current simulation's state.
-    Returns:
-        number: Integer representing number of people currently waiting.
-    """
-    
-    number = 0
-
-    up_calls = state.up_calls
-    down_calls = state.down_calls
-    persons_in_elevator = state.elevator.persons_in_elevator
-
-    for dictionary in [up_calls, down_calls, persons_in_elevator]:
-        people_array = dictionary.values()
-        for _ in people_array:
-            number += 1
-
-    return number
-
 
 if __name__ == "__main__":
 
@@ -465,12 +445,14 @@ if __name__ == "__main__":
 
         # Repeat until no more events in timelist.
         count = 0
-        while timelist.has_next():
+        done = False
+        while not done:
             count += 1
             action = process_action(model.act(process_state(current_state), EPSILON))
-            current_event = timelist.next_event()
-            timelist, result_state, added_time, reward, done = useState(timelist, current_state, current_event, model, action)
-            reward = reward - number_people_waiting(result_state) ** (1. / 3)
+            reward = None
+            while reward is None:
+                current_event = timelist.next_event()
+                timelist, result_state, added_time, reward, done = useState(timelist, current_state, current_event, model, action)
             model.step(current_state,action,reward,process_state(result_state),done)
             weight = 0
             for floor in result_state.elevator.persons_in_elevator:
@@ -482,9 +464,7 @@ if __name__ == "__main__":
             log.add_log_pit(current_log_pit)
             current_state = result_state
 
-        if count % 10 == 0: # Greedy Strategy Epsilon Increase:
-            if EPSILON != 1:
-                EPSILON += .1
+        EPSILON = 1 - 1/(5 * sqrt(epoch + 1))
 
         print(f"Epoch: {epoch + 1}")
         print(f"Number of Events: {count}")

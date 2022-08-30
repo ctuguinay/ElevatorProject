@@ -66,3 +66,11 @@ class DoorClose:
     """
 
     pass
+
+class IdleEnd:
+    """
+    An object to be used in a TimeListEvent, used to describe the end of an "idle period".
+    Used to ensure the TimeList doesn't run out of events before the end
+
+    No attributes, no arguments.
+    """
