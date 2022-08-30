@@ -17,7 +17,7 @@ BUFFER_SIZE = int(64)  #replay buffer size
 BATCH_SIZE = 64         # minibatch size
 GAMMA = 1            # discount factor
 TAU = 1e-5              # for soft update of target parameters
-LR = 1e-3               # learning rate
+LR = 1e-4               # learning rate
 UPDATE_EVERY = 5        # how often to update the network
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
