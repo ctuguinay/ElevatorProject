@@ -29,7 +29,9 @@ from math import sqrt
 from concurrent.futures import process
 import os
 import sys
+import copy
 import torch
+from typing import Dict, Tuple
 import random
 import subprocess
 import numpy as np
@@ -44,6 +46,8 @@ HEIGHT = {value:key for value in range(1, NUM_FLOORS + 1) for key in [(value - 1
     # this can be altered to create variable distances in the case of a specific building.
 
 SEED = 0 # Sets random seed for the training.
+
+NUMBER_PEOPLE = 1
 
 def initialize_values(timelist, number_samples, return_model):
     """
@@ -70,7 +74,7 @@ def initialize_values(timelist, number_samples, return_model):
     # Sample from full timelist.
     if number_samples != -1:
         full_timelist_future = full_timelist.future
-        random.seed(SEED)
+        random.seed()
         future_samples = random.sample(full_timelist_future, number_samples)
         future_samples.sort(key=lambda hall_call: hall_call.time, reverse=False)
         timelist = TimeList()
@@ -102,7 +106,7 @@ def initialize_values(timelist, number_samples, return_model):
 
     # Initialize Model
     if return_model:
-        model = Agent(state_size = 27, action_size = 5, seed = SEED)
+        model = Agent(state_size = 26, action_size = 5, seed = SEED)
         return total_time, timelist, elevator, current_state, log, model
     else:
         return total_time, timelist, elevator, current_state, log
@@ -163,6 +167,14 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
     current_state.aggregated_reward += curr_reward
     reward = current_state.aggregated_reward
     added_time = []
+
+    if current_event == Idle():
+        curr_reward *= 10
+
+    if current_state.time > 86400:
+        return timelist, current_state, added_time, -10**6, True
+    # if num_people > 300:
+    #     return timelist, current_state, added_time, -10**4, True
 
     if not timelist.has_next() and current_event.object_type != "Hall Call" and num_people == 0:
         # there are no hall calls left and nobody's in the elevator. Our work is done, so we return the empty
@@ -314,6 +326,8 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         for person in removed:
             #added_time += current_state.time - person.time
             added_time.append(current_state.time - person.time)
+        
+        reward += len(removed) * 10000
 
         if command.going_up:
             calls = current_state.up_calls
@@ -323,6 +337,7 @@ def useState(timelist: TimeList, current_state: State, current_event: TimeListEv
         current_state.elevator.going_up = command.going_up
 
         current_state.elevator.add_floor(calls)
+
         current_state.elevator.letting_people_in = True
         current_state.elevator.buttons_pressed[current_state.elevator.current_floor] = False
 
@@ -360,8 +375,8 @@ def process_state(state, use_tensor = False):
     """
 
     capacity, curr_weight, curr_pos, buttons_pressed, up_buttons, down_buttons = state_to_elevator_input(state)
-    total_val = capacity + curr_weight + curr_pos
-    temp_array = [capacity/total_val, curr_weight/total_val, curr_pos/total_val]
+    total_val = capacity + curr_weight
+    temp_array = [capacity/total_val, curr_weight/total_val, curr_pos/NUM_FLOORS]
 
     for array in [buttons_pressed, up_buttons, down_buttons]:
         for item in array:
@@ -398,13 +413,45 @@ def process_action(action_value):
     elif action_value == 4: 
         return Move(False)
 
+def process_state_for_input(state:State) -> Tuple[float, float, int,
+        Dict[int,bool],Dict[int,bool],Dict[int,bool]]:
+    """
+    Arguments:
+        state: the state to be transformed
+    Takes a state and process it into the information the model is supposed to have
+    when it gets called. Specifically, this returns, in order: the elevator's current
+    position, the buttons pressed within the elevator (dict from floor num to if made), 
+    the up_calls that have been made (dict from floor num to if made), 
+    and the down_calls that have been made (dict from floor num to if made)
+    """
+    curr_pos = state.elevator.current_floor
+    buttons_pressed = state.elevator.buttons_pressed
+    state_arr = [state.elevator.curr_weight/state.elevator.capacity, \
+        curr_pos/NUM_FLOORS]
+
+    for floor, call_list in state.up_calls.items():
+        state_arr.append(len(call_list))
+    
+    for floor, call_list in state.down_calls.items():
+        state_arr.append(len(call_list))
+
+    desired_locations = []
+    for _ in range(NUM_FLOORS):
+        desired_locations.append(0)
+
+    for call_list in state.elevator.persons_in_elevator.values():
+        for person in call_list:
+            desired_locations[person.dest_floor - 1] += 1
+    
+    state_arr += desired_locations
+
+    return np.array(state_arr)
+
 
 if __name__ == "__main__":
 
     # Get parsed args.
     args = argparse_create((sys.argv[1:]))
-
-    number_people = 200
 
     python_command = args.python_command
 
@@ -419,7 +466,7 @@ if __name__ == "__main__":
     full_path = os.path.join(script_dir, "data", "CSVs", "data.csv").replace("simulations\\", "")
 
     full_gen_path = script_dir.replace("simulations", "") + gen_script
-    subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
+    subprocess.run([python_command, full_gen_path, f"--set_persons={NUMBER_PEOPLE}", f"--set_floors={NUM_FLOORS}"])
 
     # Initiliaze Full Timelist with reader.
     full_timelist = TimeList()
@@ -428,7 +475,7 @@ if __name__ == "__main__":
     for epoch in range(150):
 
         full_gen_path = script_dir.replace("simulations", "") + gen_script
-        subprocess.run([python_command, full_gen_path, f"--set_persons={number_people}", f"--set_floors={NUM_FLOORS}"])
+        subprocess.run([python_command, full_gen_path, f"--set_persons={NUMBER_PEOPLE}", f"--set_floors={NUM_FLOORS}"])
 
         # Initiliaze Full Timelist with reader.
         full_timelist = TimeList()
@@ -448,12 +495,15 @@ if __name__ == "__main__":
         done = False
         while not done:
             count += 1
-            action = process_action(model.act(process_state(current_state), EPSILON))
             reward = None
+            current_state_copy = copy.deepcopy(current_state)
             while reward is None:
+                action = process_action(model.act(process_state_for_input(current_state), EPSILON))
                 current_event = timelist.next_event()
                 timelist, result_state, added_time, reward, done = useState(timelist, current_state, current_event, model, action)
-            model.step(current_state,action,reward,process_state(result_state),done)
+            loss = model.step(process_state_for_input(current_state_copy),action,reward,process_state_for_input(result_state),done)
+            if loss is not None:
+                print(np.log(loss))
             weight = 0
             for floor in result_state.elevator.persons_in_elevator:
                 for person in result_state.elevator.persons_in_elevator[floor]:
@@ -464,7 +514,7 @@ if __name__ == "__main__":
             log.add_log_pit(current_log_pit)
             current_state = result_state
 
-        EPSILON = 1 - 1/(5 * sqrt(epoch + 1))
+        EPSILON = 0.8
 
         print(f"Epoch: {epoch + 1}")
         print(f"Number of Events: {count}")

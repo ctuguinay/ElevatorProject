@@ -6,19 +6,21 @@ from collections import namedtuple, deque
 
 try:
     from simulations.classes.QNetwork import QNetwork
+    from simulations.classes.Commands import Idle, OpenCloseDoors, Move, Command
 except:
     from classes.QNetwork import QNetwork
+    from classes.Commands import Idle, OpenCloseDoors, Move, Command
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(64)  #replay buffer size
-BATCH_SIZE = 64         # minibatch size
-GAMMA = 1            # discount factor
-TAU = 1e-5              # for soft update of target parameters
-LR = 1e-4               # learning rate
-UPDATE_EVERY = 5        # how often to update the network
+BUFFER_SIZE = 64  #replay buffer size
+BATCH_SIZE = 32         # minibatch size
+GAMMA = 0.9            # discount factor
+TAU = 0.1              # for soft update of target parameters
+LR = 1e-1             # learning rate
+UPDATE_EVERY = 32        # how often to update the network
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -62,7 +64,9 @@ class Agent():
 
             if len(self.memory)>BATCH_SIZE:
                 experience = self.memory.sample()
-                self.learn(experience, GAMMA)
+                return self.learn(experience, GAMMA)
+        
+        return None
     def act(self, state, eps = 0):
         """Returns action for given state as per current policy
         Params
@@ -83,6 +87,7 @@ class Agent():
             return random.choice(np.arange(self.action_size))
             
     def learn(self, experiences, gamma):
+
         """Update value parameters using given batch of experience tuples.
         Params
         =======
@@ -103,6 +108,7 @@ class Agent():
     
         with torch.no_grad():
             labels_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
+            # print(self.qnetwork_target(next_states).detach().argmax(1))
 
         # .detach() ->  Returns a new Tensor, detached from the current graph.
         labels = rewards + (gamma* labels_next*(1-dones))
@@ -112,8 +118,12 @@ class Agent():
         loss.backward()
         self.optimizer.step()
 
+
         # ------------------- update target network ------------------- #
         self.soft_update(self.qnetwork_local,self.qnetwork_target,TAU)
+
+        return loss.item()
+
             
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
@@ -150,6 +160,7 @@ class ReplayBuffer:
                                                                "reward",
                                                                "next_state",
                                                                "done"])
+        self.action_to_index = {}
         self.seed = random.seed(seed)
         
     def add(self,state, action, reward, next_state,done):
@@ -161,12 +172,30 @@ class ReplayBuffer:
         """Randomly sample a batch of experiences from memory"""
         experiences = random.sample(self.memory,k=self.batch_size)
         states = torch.from_numpy(np.vstack([e.state for e in experiences if e is not None])).float().to(device)
-        actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(device)
+        temp_actions_arr = []
+        for e in experiences:
+            temp_actions_arr.append([_action_to_int(e.action)])
+        actions = torch.tensor(temp_actions_arr)
         rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(device)
         next_states = torch.from_numpy(np.vstack([e.next_state for e in experiences if e is not None])).float().to(device)
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(device)
         
         return (states,actions,rewards,next_states,dones)
+
     def __len__(self):
         """Return the current size of internal memory."""
         return len(self.memory)
+
+def _action_to_int(action: Command):
+    if type(action) == Idle:
+        return 0
+    if type(action) == OpenCloseDoors:
+        if action.going_up:
+            return 1
+        else:
+            return 2
+    if type(action) == Move:
+        if action.if_up:
+            return 3
+        else:
+            return 4    
