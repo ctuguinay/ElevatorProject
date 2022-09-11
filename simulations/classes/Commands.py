@@ -58,18 +58,23 @@ class Move(Command):
     A Command that asks the elevator to either move up one floor or down one floor
     Args:
         if_up: True if the elevator is being asked to move up, false if down
+        is_stopping: True if the elevator is stop
     Attributes:
         if_up: True if the elevator is being asked to move up, false if down
+        is_stopping: True if the elevator is stop
     """
 
 
-    def __init__(self, if_up):
+    def __init__(self, if_up, is_stopping):
         if (type(if_up) is not bool):
             raise TypeError("Argument if_up is not of type bool")
         self.if_up = if_up
-    
+        self.is_stopping = is_stopping
+
     def __str__(self):
         return f"Move: {{if_up: {self.if_up}}}"
     
     def __repr__(self):
         return self.__str__()
+
+    
