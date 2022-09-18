@@ -15,12 +15,12 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = 64  #replay buffer size
-BATCH_SIZE = 32         # minibatch size
-GAMMA = 0.9            # discount factor
-TAU = 0.1              # for soft update of target parameters
-LR = 1e-1             # learning rate
-UPDATE_EVERY = 32        # how often to update the network
+BUFFER_SIZE = 500000  #replay buffer size
+BATCH_SIZE = 256        # minibatch size
+GAMMA = 0.99            # discount factor
+TAU = 3e-3              # for soft update of target parameters
+LR = 5e-5           # learning rate
+UPDATE_EVERY = 128        # how often to update the network
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -43,13 +43,13 @@ class Agent():
         
         
         #Q- Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_local = QNetwork(self.state_size, self.action_size, seed).to(device)
+        self.qnetwork_target = QNetwork(self.state_size, self.action_size, seed).to(device)
         
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(),lr=LR)
         
         # Replay memory 
-        self.memory = ReplayBuffer(action_size, BUFFER_SIZE,BATCH_SIZE,seed)
+        self.memory = ReplayBuffer(self.action_size, BUFFER_SIZE,BATCH_SIZE,seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
         
@@ -78,10 +78,12 @@ class Agent():
         self.qnetwork_local.eval()
         with torch.no_grad():
             action_values = self.qnetwork_local(state)
+            #print(action_values)
         self.qnetwork_local.train()
 
         #Epsilon -greedy action selction
         if random.random() > eps:
+            #print(np.argmax(action_values.cpu().data.numpy()))
             return np.argmax(action_values.cpu().data.numpy())
         else:
             return random.choice(np.arange(self.action_size))

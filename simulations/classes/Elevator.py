@@ -59,20 +59,23 @@ class Elevator(object):
             calls: either the up or down calls array, depending on which array of people are being added
 
         Returns:
-            persons_in_elevator: Dictionary where Keys are a person's ID and Values are Hall Calls.
+            number_people: Int for the number of people added to the elevator.
         """
 
         waiting = calls[self.current_floor]
-
+        number_people = 0
         for person in waiting:
             if self.curr_weight + person.weight < self.capacity:
                 self.persons_in_elevator[self.current_floor].append(person)
                 calls[self.current_floor].remove(person)
                 self.button_pressed(person.dest_floor)
                 self.curr_weight += person.weight
+                number_people =+ 1
             else:
                 # no more room
                 break
+        
+        return number_people
 
     def button_pressed(self, button_pressed):
         """
