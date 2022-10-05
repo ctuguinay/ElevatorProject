@@ -19,6 +19,10 @@ python base_case_simulation.py --python_command python3
 
 * `base_case_simulation.py` correlates to section 4.5 of the paper: Naive Approach to Elevator Control.
 
+* The Naive Model 1.0 takes in only 4 floors and does not account for weight or acceleration.
+
+* The Naive Model 2.0 takes in 8 floors and does account for weight and acceleration, which is why there is a decrease in performance, when compared to the Naive Model 2.0.
+
 * Run the RL Training Model in Python:
 ```
 python dqn_training.py --python_command python3
