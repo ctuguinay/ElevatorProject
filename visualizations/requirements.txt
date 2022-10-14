@@ -1,5 +1,5 @@
 # For just this subdirectory.
 # Make sure you are using AT LEAST Python 3.8.
 
-numpy # For powerful N-d arrays.
+numpy==1.23.2 # NumPy is the fundamental package for array computing with Python.
 matplotlib # Visualizations.
